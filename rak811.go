@@ -78,14 +78,83 @@ func (l *Lora) SetRecvEx(mode int) {
 	l.tx(fmt.Sprintf("recv_ex=%d", mode))
 }
 
-// Join the configured network in OTAA mode
+//
+// LoRaWAN commands
+//
+
+// SetConfig set LoRaWAN configurations
+func (l *Lora) SetConfig(config string) {
+	l.tx(config)
+}
+
+// Get LoRaWAN configuration
+func (l *Lora) GetConfig(key string) {
+	l.tx(fmt.Sprintf("get_config=%s", key))
+}
+
+// Get LoRaWAN band region
+func (l *Lora) GetBand() {
+	l.tx("band")
+}
+
+// Set LoRaWAN band region
+func (l *Lora) SetBand(band string) {
+	l.tx(fmt.Sprintf("band=%s", band))
+}
+
+// JoinOTAA join the configured network in OTAA mode
 func (l *Lora) JoinOTAA() {
 	l.tx("join=otaa")
 }
 
-// Join the configured network in ABP mode
+// JoinABP join the configured network in ABP mode
 func (l *Lora) JoinABP() {
 	l.tx("join=abp")
+}
+
+// Signal check the radio rssi, snr, update by latest received radio packet
+func (l *Lora) Signal() {
+	l.tx("signal")
+}
+
+// GetDataRate get next send data rate
+func (l *Lora) GetDataRate() {
+	l.tx("dr")
+}
+
+// SetDataRate set next send data rate
+func (l *Lora) SetDataRate(datarate string) {
+	l.tx(fmt.Sprintf("dr=%s", datarate))
+}
+
+// GetLinkCnt get LoRaWAN uplink and downlink counter
+func (l *Lora) GetLinkCnt() {
+	l.tx("link_cnt")
+}
+
+// SetLinkCnt set LoRaWAN uplink and downlink counter
+func (l *Lora) SetLinkCnt(uplinkCnt, downlinkCnt float32) {
+	l.tx(fmt.Sprintf("link_cnt=%f,%f", uplinkCnt, downlinkCnt))
+}
+
+// GetABPInfo
+func (l *Lora) GetABPInfo() {
+	l.tx("abp_info")
+}
+
+// Send send data to LoRaWAN network
+func (l *Lora) Send(data string) {
+	l.tx(fmt.Sprintf("send=%s", data))
+}
+
+// Recv receive event and data from LoRaWAN or LoRaP2P network
+func (l *Lora) Recv(data string) {
+	l.tx(fmt.Sprintf("recv=%s", data))
+}
+
+// GetRfConfig TX and RX used on RF
+func (l *Lora) GetRfConfig() {
+	l.tx("rf_config")
 }
 
 func createCmd(cmd string) []byte {
