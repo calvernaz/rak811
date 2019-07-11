@@ -168,20 +168,33 @@ func (l *Lora) Txc(parameters string) {
 }
 
 // Rxc set module in LoraP2P receive mode
-func (l *Lora) Rxc(enable int)  {
+func (l *Lora) Rxc(enable int) {
 	l.tx(fmt.Sprintf("rxc=%d", enable))
 }
 
 // TxStop stops LoraP2P TX
-func(l *Lora) TxStop() {
+func (l *Lora) TxStop() {
 	l.tx("tx_stop")
 }
 
 // Stop LoraP2P RX
-func(l *Lora) RxStop() {
+func (l *Lora) RxStop() {
 	l.tx("rx_stop")
 }
 
+//
+// Radio commands
+//
+
+// GetStatus get radio statistics
+func (l *Lora) GetRadioStatus() {
+	l.tx("status")
+}
+
+// SetStatus clear radio statistics
+func (l *Lora) ClearRadioStatus() {
+	l.tx("status=0")
+}
 
 func createCmd(cmd string) []byte {
 	command := fmt.Sprintf("at+%s\r\n", cmd)
