@@ -1,8 +1,12 @@
 package rak811
 
 import (
+	"bytes"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
+	"time"
 
 	"github.com/tarm/serial"
 )
@@ -22,13 +26,47 @@ type Lora struct {
 	port *serial.Port
 }
 
-func (l *Lora) tx(cmd string) {
-	_, err := l.port.Write(createCmd(cmd))
+func New(conf *serial.Config) (*Lora, error) {
+	defaultConfig := &serial.Config{
+		Name:        "/dev/serial0",
+		Baud:        11500,
+		ReadTimeout: 1500 * time.Millisecond,
+		Parity: serial.ParityNone,
+		StopBits: serial.Stop1,
+		Size: 8,
+	}
+
+	newConfig(conf)(defaultConfig)
+
+	port, err := serial.OpenPort(defaultConfig)
 	if err != nil {
-		log.Printf("failed to write createCmd %s", cmd)
+		return nil, err
+	}
+
+	return &Lora{
+		ch: make(chan *command, 10),
+		port: port,
+	}, nil
+}
+
+func (l *Lora) tx(cmd string) string {
+	if _, err := l.port.Write(createCmd(cmd)); err != nil {
+		log.Printf("failed to write command %s", cmd)
 	}
 	// read line
-
+	buf := bytes.Buffer{}
+	data := make([]byte, 32)
+	for {
+		n, err := l.port.Read(data)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+		} else {
+			buf.Write(data[:n])
+		}
+	}
+	return hex.EncodeToString(buf.Bytes())
 }
 
 //
@@ -199,6 +237,20 @@ func (l *Lora) ClearRadioStatus() {
 func createCmd(cmd string) []byte {
 	command := fmt.Sprintf("at+%s\r\n", cmd)
 	return []byte(command)
+}
+
+//
+// Peripheral commands
+//
+
+// GetUART get UART configurations
+func (l *Lora) GetUART() {
+	l.tx("uart")
+}
+
+// SetUART set UART configurations
+func (l *Lora) SetUART(configuration string) {
+	l.tx(fmt.Sprintf("uart=%s", configuration))
 }
 
 func newConfig(config *serial.Config) config {
