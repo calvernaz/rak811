@@ -152,10 +152,36 @@ func (l *Lora) Recv(data string) {
 	l.tx(fmt.Sprintf("recv=%s", data))
 }
 
-// GetRfConfig TX and RX used on RF
+// GetRfConfig get RF parameters
 func (l *Lora) GetRfConfig() {
 	l.tx("rf_config")
 }
+
+// SetRfConfig Set RF parameters
+func (l *Lora) SetRfConfig(parameters string) {
+	l.tx(fmt.Sprintf("rf_config=%s", parameters))
+}
+
+// Txc send LoraP2P message
+func (l *Lora) Txc(parameters string) {
+	l.tx(fmt.Sprintf("txc=%s", parameters))
+}
+
+// Rxc set module in LoraP2P receive mode
+func (l *Lora) Rxc(enable int)  {
+	l.tx(fmt.Sprintf("rxc=%d", enable))
+}
+
+// TxStop stops LoraP2P TX
+func(l *Lora) TxStop() {
+	l.tx("tx_stop")
+}
+
+// Stop LoraP2P RX
+func(l *Lora) RxStop() {
+	l.tx("rx_stop")
+}
+
 
 func createCmd(cmd string) []byte {
 	command := fmt.Sprintf("at+%s\r\n", cmd)
