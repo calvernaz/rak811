@@ -3,12 +3,12 @@ package rak811
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/tarm/serial"
 )
 
 // based on: https://github.com/PiSupply/rak811-python/blob/master/iotloranode.py
+// base specification: https://github.com/RAKWireless/RAK811/blob/master/Software%20Development/RAK811%C2%A0Lora%C2%A0AT%C2%A0Command%C2%A0V1.4.pdf
 
 type config func(*serial.Config)
 
@@ -17,40 +17,80 @@ type command struct {
 }
 
 type Lora struct {
-	ch   <-chan *command
+	ch <-chan *command
 
 	port *serial.Port
 }
 
-
-func New(conf *serial.Config) (*Lora, error) {
-	defaultConfig := &serial.Config{
-		Name:        "/dev/serial0",
-		Baud:        11500,
-		ReadTimeout: 500 * time.Millisecond,
-	}
-
-	newConfig(conf)(defaultConfig)
-
-	port, err := serial.OpenPort(defaultConfig)
+func (l *Lora) tx(cmd string) {
+	_, err := l.port.Write(createCmd(cmd))
 	if err != nil {
-		return nil, err
+		log.Printf("failed to write createCmd %s", cmd)
 	}
+	// read line
 
-	return &Lora{
-		ch: make(chan *command, 10),
-		port: port,
-	}, nil
 }
 
-func (l *Lora) tx(cmd string) {
-	command := fmt.Sprintf("at+%s\r\n", cmd)
-	_, err := l.port.Write([]byte(command))
-	if err != nil {
-		log.Printf("failed to write command %s",command)
-	}
+//
+// System Commands
+//
 
-	// read line
+// Version get module version
+func (l *Lora) Version() {
+	l.tx("version")
+}
+
+// Sleep enter sleep mode
+func (l *Lora) Sleep() {
+	l.tx("sleep")
+}
+
+// Reset module or LoRaWAN stack
+// 0: reset and restart module
+// 1: reset LoRaWAN stack and the module will reload
+// LoRa configuration from EEPROM
+func (l *Lora) Reset(mode int) {
+	l.tx(fmt.Sprintf("reset=%d", mode))
+}
+
+// Reload set LoRaWAN and LoraP2P configurations to default
+func (l *Lora) Reload() {
+	l.tx("reload")
+}
+
+// GetMode get module mode
+func (l *Lora) GetMode() {
+	l.tx("mode")
+}
+
+// SetMode set module to wprk for LoRaWAN or LoraP2P mode, defaults to 0
+func (l *Lora) SetMode(mode int) {
+	l.tx(fmt.Sprintf("mode=%d", mode))
+}
+
+// GetRecvEx get RSSI & SNR report on receive flag (Enabled/Disabled).
+func (l *Lora) GetRecvEx() {
+	l.tx("recv_ex")
+}
+
+// SetRecvEx set RSSI & SNR report on receive flag (Enabled/Disabled).
+func (l *Lora) SetRecvEx(mode int) {
+	l.tx(fmt.Sprintf("recv_ex=%d", mode))
+}
+
+// Join the configured network in OTAA mode
+func (l *Lora) JoinOTAA() {
+	l.tx("join=otaa")
+}
+
+// Join the configured network in ABP mode
+func (l *Lora) JoinABP() {
+	l.tx("join=abp")
+}
+
+func createCmd(cmd string) []byte {
+	command := fmt.Sprintf("at+%s\r\n", cmd)
+	return []byte(command)
 }
 
 func newConfig(config *serial.Config) config {
