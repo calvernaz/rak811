@@ -53,22 +53,6 @@ func (l *Lora) tx(cmd string) string {
 		log.Printf("failed to write command %s", cmd)
 	}
 	return ""
-	// read line
-	//buf := bytes.Buffer{}
-	//data := make([]byte, 32)
-	//for {
-	//	n, err := l.port.Read(data)
-	//	if err != nil {
-	//		if err == io.EOF {
-	//			break
-	//		}
-	//	} else {
-	//		buf.Write(data[:n])
-	//	}
-	//}
-	//result := hex.EncodeToString(buf.Bytes())
-	//fmt.Printf("response: %s\n", result)
-	//return result
 }
 
 //
