@@ -56,21 +56,21 @@ func (l *Lora) tx(cmd string) string {
 		log.Printf("failed to write command %s", cmd)
 	}
 	// read line
-	buf := bytes.Buffer{}
-	data := make([]byte, 32)
-	for {
-		n, err := l.port.Read(data)
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-		} else {
-			buf.Write(data[:n])
-		}
-	}
-	result := hex.EncodeToString(buf.Bytes())
-	fmt.Printf("response: %s\n", result)
-	return result
+	//buf := bytes.Buffer{}
+	//data := make([]byte, 32)
+	//for {
+	//	n, err := l.port.Read(data)
+	//	if err != nil {
+	//		if err == io.EOF {
+	//			break
+	//		}
+	//	} else {
+	//		buf.Write(data[:n])
+	//	}
+	//}
+	//result := hex.EncodeToString(buf.Bytes())
+	//fmt.Printf("response: %s\n", result)
+	//return result
 }
 
 //
@@ -117,7 +117,7 @@ func (l *Lora) GetMode() {
 	l.tx("mode")
 }
 
-// SetMode set module to wprk for LoRaWAN or LoraP2P mode, defaults to 0
+// SetMode set module to work for LoRaWAN or LoraP2P mode, defaults to 0
 func (l *Lora) SetMode(mode int) {
 	l.tx(fmt.Sprintf("mode=%d", mode))
 }
