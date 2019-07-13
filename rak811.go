@@ -31,7 +31,7 @@ type Lora struct {
 func New(conf *serial.Config) (*Lora, error) {
 	defaultConfig := &serial.Config{
 		Name:        "/dev/serial0",
-		Baud:        11500,
+		Baud:        115200,
 		ReadTimeout: 1500 * time.Millisecond,
 		Parity: serial.ParityNone,
 		StopBits: serial.Stop1,
