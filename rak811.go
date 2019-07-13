@@ -1,10 +1,7 @@
 package rak811
 
 import (
-	"bytes"
-	"encoding/hex"
 	"fmt"
-	"io"
 	"log"
 	"time"
 
@@ -55,6 +52,7 @@ func (l *Lora) tx(cmd string) string {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
 		log.Printf("failed to write command %s", cmd)
 	}
+	return ""
 	// read line
 	//buf := bytes.Buffer{}
 	//data := make([]byte, 32)
