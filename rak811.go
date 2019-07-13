@@ -8,6 +8,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/davecheney/gpio"
+	"github.com/davecheney/gpio/rpi"
 	"github.com/tarm/serial"
 )
 
@@ -66,7 +68,9 @@ func (l *Lora) tx(cmd string) string {
 			buf.Write(data[:n])
 		}
 	}
-	return hex.EncodeToString(buf.Bytes())
+	result := hex.EncodeToString(buf.Bytes())
+	fmt.Println(result)
+	return result
 }
 
 //
@@ -89,6 +93,18 @@ func (l *Lora) Sleep() {
 // LoRa configuration from EEPROM
 func (l *Lora) Reset(mode int) {
 	l.tx(fmt.Sprintf("reset=%d", mode))
+}
+
+func (l *Lora) HardReset() {
+	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
+	if err != nil {
+		fmt.Printf("Error opening pin! %s\n", err)
+		return
+	}
+	pin.Clear()
+	time.Sleep(10 * time.Millisecond)
+	pin.Set()
+	time.Sleep(10 * time.Millisecond)
 }
 
 // Reload set LoRaWAN and LoraP2P configurations to default
@@ -114,6 +130,10 @@ func (l *Lora) GetRecvEx() {
 // SetRecvEx set RSSI & SNR report on receive flag (Enabled/Disabled).
 func (l *Lora) SetRecvEx(mode int) {
 	l.tx(fmt.Sprintf("recv_ex=%d", mode))
+}
+
+func (l *Lora) Close() {
+	_ = l.port.Close()
 }
 
 //
