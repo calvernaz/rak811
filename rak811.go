@@ -69,7 +69,7 @@ func (l *Lora) tx(cmd string) string {
 		}
 	}
 	result := hex.EncodeToString(buf.Bytes())
-	fmt.Println(result)
+	fmt.Printf("response: %s\n", result)
 	return result
 }
 
