@@ -9,12 +9,12 @@ const OK = "OK\r\n"
 
 func TestCreateCmd(t *testing.T) {
 	tests := []struct {
-		in string
+		in  string
 		out string
 	}{
-		{"mode=0", "at+mode=0\r\n"}, /* SET LoraWAN work mode */
-		{"join=otaa", "at+join=otaa\r\n"}, /* Join OTAA type*/
-		{"join=abp", "at+join=abp\r\n"}, /* Join ABP type*/
+		{"mode=0", "at+mode=0\r\n"},                         /* SET LoraWAN work mode */
+		{"join=otaa", "at+join=otaa\r\n"},                   /* Join OTAA type*/
+		{"join=abp", "at+join=abp\r\n"},                     /* Join ABP type*/
 		{"get_config=dev_eui", "at+get_config=dev_eui\r\n"}, /* GET Dev_EUI check */
 		{"set_config=rx2:3,868500000", "at+set_config=rx2:3,868500000\r\n"},
 		{"set_config=app_eui:39d7119f920f7952&app_key:a6b08140dae1d795ebfa5a6dee1f4dbd",
@@ -145,6 +145,126 @@ func TestLora_SetRecvEx(t *testing.T) {
 
 	t.Run("set enable or disable rssi and snr messages", func(t *testing.T) {
 		res, err := lora.SetRecvEx(0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_SetConfig(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("set enable or disable rssi and snr messages", func(t *testing.T) {
+		res, err := lora.SetConfig("EU868:20")
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_GetConfig(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("get lora configuration", func(t *testing.T) {
+		res, err := lora.GetConfig("dev_addr")
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_GetBand(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OKEU868\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("get lora region", func(t *testing.T) {
+		res, err := lora.GetBand()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_JoinOTAA(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("activation over the air", func(t *testing.T) {
+		res, err := lora.JoinOTAA()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Signal(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK10 11\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("signal from Lora gateway", func(t *testing.T) {
+		res, err := lora.JoinOTAA()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_GetDataRate(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("change next data rate", func(t *testing.T) {
+		res, err := lora.SetDataRate("EU868")
 		if err != nil {
 			t.Errorf("error %v", err)
 		}

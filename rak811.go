@@ -126,18 +126,18 @@ func (l *Lora) Close() {
 //
 
 // SetConfig set LoRaWAN configurations
-func (l *Lora) SetConfig(config string) {
-	l.tx(config)
+func (l *Lora) SetConfig(config string) (string, error) {
+	return l.tx(config)
 }
 
 // Get LoRaWAN configuration
-func (l *Lora) GetConfig(key string) {
-	l.tx(fmt.Sprintf("get_config=%s", key))
+func (l *Lora) GetConfig(key string) (string, error) {
+	return l.tx(fmt.Sprintf("get_config=%s", key))
 }
 
 // Get LoRaWAN band region
-func (l *Lora) GetBand() {
-	l.tx("band")
+func (l *Lora) GetBand() (string, error) {
+	return l.tx("band")
 }
 
 // Set LoRaWAN band region
@@ -146,8 +146,8 @@ func (l *Lora) SetBand(band string) {
 }
 
 // JoinOTAA join the configured network in OTAA mode
-func (l *Lora) JoinOTAA() {
-	l.tx("join=otaa")
+func (l *Lora) JoinOTAA() (string, error) {
+	return l.tx("join=otaa")
 }
 
 // JoinABP join the configured network in ABP mode
@@ -166,8 +166,8 @@ func (l *Lora) GetDataRate() {
 }
 
 // SetDataRate set next send data rate
-func (l *Lora) SetDataRate(datarate string) {
-	l.tx(fmt.Sprintf("dr=%s", datarate))
+func (l *Lora) SetDataRate(datarate string) (string, error) {
+	return l.tx(fmt.Sprintf("dr=%s", datarate))
 }
 
 // GetLinkCnt get LoRaWAN uplink and downlink counter
