@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+const OK = "OK\r\n"
+
 func TestCreateCmd(t *testing.T) {
 	tests := []struct {
 		in string
@@ -30,4 +32,141 @@ func TestCreateCmd(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLora_Version(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK11.22.33.44\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("get software version", func(t *testing.T) {
+		res, err := lora.Version()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Sleep(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("module enter sleep", func(t *testing.T) {
+		res, err := lora.Sleep()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Reset(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("reset module", func(t *testing.T) {
+		res, err := lora.Reset(0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Reload(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("reload the default parameters", func(t *testing.T) {
+		res, err := lora.Reset(0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_SetMode(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("set module work on", func(t *testing.T) {
+		res, err := lora.SetMode(0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_SetRecvEx(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("set enable or disable rssi and snr messages", func(t *testing.T) {
+		res, err := lora.SetRecvEx(0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+type FakeSerialPort struct {
+	buf []byte
+}
+
+func (f FakeSerialPort) Read(p []byte) (n int, err error) {
+	n = copy(p, f.buf)
+	return n, nil
+}
+
+func (FakeSerialPort) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (FakeSerialPort) Close() error {
+	return nil
 }

@@ -1,7 +1,9 @@
 package rak811
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
@@ -20,9 +22,7 @@ type command struct {
 }
 
 type Lora struct {
-	ch <-chan *command
-
-	port *serial.Port
+	port io.ReadWriteCloser
 }
 
 func New(conf *serial.Config) (*Lora, error) {
@@ -30,9 +30,9 @@ func New(conf *serial.Config) (*Lora, error) {
 		Name:        "/dev/serial0",
 		Baud:        115200,
 		ReadTimeout: 1500 * time.Millisecond,
-		Parity: serial.ParityNone,
-		StopBits: serial.Stop1,
-		Size: 8,
+		Parity:      serial.ParityNone,
+		StopBits:    serial.Stop1,
+		Size:        8,
 	}
 
 	newConfig(conf)(defaultConfig)
@@ -43,16 +43,17 @@ func New(conf *serial.Config) (*Lora, error) {
 	}
 
 	return &Lora{
-		ch: make(chan *command, 10),
 		port: port,
 	}, nil
 }
 
-func (l *Lora) tx(cmd string) string {
+func (l *Lora) tx(cmd string) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
 		log.Printf("failed to write command %s", cmd)
 	}
-	return ""
+
+	reader := bufio.NewReader(l.port)
+	return reader.ReadString('\n')
 }
 
 //
@@ -60,21 +61,21 @@ func (l *Lora) tx(cmd string) string {
 //
 
 // Version get module version
-func (l *Lora) Version() {
-	l.tx("version")
+func (l *Lora) Version() (string, error) {
+	return l.tx("version")
 }
 
 // Sleep enter sleep mode
-func (l *Lora) Sleep() {
-	l.tx("sleep")
+func (l *Lora) Sleep() (string, error) {
+	return l.tx("sleep")
 }
 
 // Reset module or LoRaWAN stack
 // 0: reset and restart module
 // 1: reset LoRaWAN stack and the module will reload
 // LoRa configuration from EEPROM
-func (l *Lora) Reset(mode int) {
-	l.tx(fmt.Sprintf("reset=%d", mode))
+func (l *Lora) Reset(mode int) (string, error) {
+	return l.tx(fmt.Sprintf("reset=%d", mode))
 }
 
 func (l *Lora) HardReset() {
@@ -100,8 +101,8 @@ func (l *Lora) GetMode() {
 }
 
 // SetMode set module to work for LoRaWAN or LoraP2P mode, defaults to 0
-func (l *Lora) SetMode(mode int) {
-	l.tx(fmt.Sprintf("mode=%d", mode))
+func (l *Lora) SetMode(mode int) (string, error) {
+	return l.tx(fmt.Sprintf("mode=%d", mode))
 }
 
 // GetRecvEx get RSSI & SNR report on receive flag (Enabled/Disabled).
@@ -110,12 +111,14 @@ func (l *Lora) GetRecvEx() {
 }
 
 // SetRecvEx set RSSI & SNR report on receive flag (Enabled/Disabled).
-func (l *Lora) SetRecvEx(mode int) {
-	l.tx(fmt.Sprintf("recv_ex=%d", mode))
+func (l *Lora) SetRecvEx(mode int) (string, error) {
+	return l.tx(fmt.Sprintf("recv_ex=%d", mode))
 }
 
 func (l *Lora) Close() {
-	_ = l.port.Close()
+	if err := l.port.Close(); err != nil {
+		fmt.Printf("failed closing port, %v", err)
+	}
 }
 
 //
