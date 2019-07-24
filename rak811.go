@@ -176,8 +176,8 @@ func (l *Lora) GetLinkCnt() {
 }
 
 // SetLinkCnt set LoRaWAN uplink and downlink counter
-func (l *Lora) SetLinkCnt(uplinkCnt, downlinkCnt float32) {
-	l.tx(fmt.Sprintf("link_cnt=%f,%f", uplinkCnt, downlinkCnt))
+func (l *Lora) SetLinkCnt(uplinkCnt, downlinkCnt float32) (string, error) {
+	return l.tx(fmt.Sprintf("link_cnt=%f,%f", uplinkCnt, downlinkCnt))
 }
 
 // GetABPInfo

@@ -274,6 +274,26 @@ func TestLora_GetDataRate(t *testing.T) {
 	})
 }
 
+func TestLora_GetLinkCnt(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK1,2\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("change next data rate", func(t *testing.T) {
+		res, err := lora.SetLinkCnt(1.0, 2.0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
 type FakeSerialPort struct {
 	buf []byte
 }
