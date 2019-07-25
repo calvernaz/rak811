@@ -283,8 +283,68 @@ func TestLora_GetLinkCnt(t *testing.T) {
 		port: fsp,
 	}
 
-	t.Run("change next data rate", func(t *testing.T) {
+	t.Run("get lora link info", func(t *testing.T) {
 		res, err := lora.SetLinkCnt(1.0, 2.0)
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_GetABPInfo(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK1,2,64,32\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("abp info query", func(t *testing.T) {
+		res, err := lora.GetABPInfo()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Send(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("send packet string", func(t *testing.T) {
+		res, err := lora.Send("0,1,DEADBEFF")
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Recv(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK1,2\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("receive the module data", func(t *testing.T) {
+		res, err := lora.Recv("STATUS_TX_CONFIRMED,10\r\n")
 		if err != nil {
 			t.Errorf("error %v", err)
 		}

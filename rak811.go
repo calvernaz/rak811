@@ -12,14 +12,8 @@ import (
 	"github.com/tarm/serial"
 )
 
-// based on: https://github.com/PiSupply/rak811-python/blob/master/iotloranode.py
-// base specification: https://github.com/RAKWireless/RAK811/blob/master/Software%20Development/RAK811%C2%A0Lora%C2%A0AT%C2%A0Command%C2%A0V1.4.pdf
-
 type config func(*serial.Config)
 
-type command struct {
-	operation string
-}
 
 type Lora struct {
 	port io.ReadWriteCloser
@@ -91,13 +85,13 @@ func (l *Lora) HardReset() {
 }
 
 // Reload set LoRaWAN and LoraP2P configurations to default
-func (l *Lora) Reload() {
-	l.tx("reload")
+func (l *Lora) Reload() (string, error) {
+	return l.tx("reload")
 }
 
 // GetMode get module mode
-func (l *Lora) GetMode() {
-	l.tx("mode")
+func (l *Lora) GetMode() (string, error) {
+	return l.tx("mode")
 }
 
 // SetMode set module to work for LoRaWAN or LoraP2P mode, defaults to 0
@@ -106,8 +100,8 @@ func (l *Lora) SetMode(mode int) (string, error) {
 }
 
 // GetRecvEx get RSSI & SNR report on receive flag (Enabled/Disabled).
-func (l *Lora) GetRecvEx() {
-	l.tx("recv_ex")
+func (l *Lora) GetRecvEx() (string, error) {
+	return l.tx("recv_ex")
 }
 
 // SetRecvEx set RSSI & SNR report on receive flag (Enabled/Disabled).
@@ -141,8 +135,8 @@ func (l *Lora) GetBand() (string, error) {
 }
 
 // Set LoRaWAN band region
-func (l *Lora) SetBand(band string) {
-	l.tx(fmt.Sprintf("band=%s", band))
+func (l *Lora) SetBand(band string) (string, error) {
+	return l.tx(fmt.Sprintf("band=%s", band))
 }
 
 // JoinOTAA join the configured network in OTAA mode
@@ -151,18 +145,18 @@ func (l *Lora) JoinOTAA() (string, error) {
 }
 
 // JoinABP join the configured network in ABP mode
-func (l *Lora) JoinABP() {
-	l.tx("join=abp")
+func (l *Lora) JoinABP() (string, error) {
+	return l.tx("join=abp")
 }
 
 // Signal check the radio rssi, snr, update by latest received radio packet
-func (l *Lora) Signal() {
-	l.tx("signal")
+func (l *Lora) Signal() (string, error) {
+	return l.tx("signal")
 }
 
 // GetDataRate get next send data rate
-func (l *Lora) GetDataRate() {
-	l.tx("dr")
+func (l *Lora) GetDataRate() (string, error) {
+	return l.tx("dr")
 }
 
 // SetDataRate set next send data rate
@@ -171,8 +165,8 @@ func (l *Lora) SetDataRate(datarate string) (string, error) {
 }
 
 // GetLinkCnt get LoRaWAN uplink and downlink counter
-func (l *Lora) GetLinkCnt() {
-	l.tx("link_cnt")
+func (l *Lora) GetLinkCnt() (string, error) {
+	return l.tx("link_cnt")
 }
 
 // SetLinkCnt set LoRaWAN uplink and downlink counter
@@ -181,48 +175,48 @@ func (l *Lora) SetLinkCnt(uplinkCnt, downlinkCnt float32) (string, error) {
 }
 
 // GetABPInfo
-func (l *Lora) GetABPInfo() {
-	l.tx("abp_info")
+func (l *Lora) GetABPInfo() (string, error) {
+	return l.tx("abp_info")
 }
 
 // Send send data to LoRaWAN network
-func (l *Lora) Send(data string) {
-	l.tx(fmt.Sprintf("send=%s", data))
+func (l *Lora) Send(data string) (string, error) {
+	return l.tx(fmt.Sprintf("send=%s", data))
 }
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
-func (l *Lora) Recv(data string) {
-	l.tx(fmt.Sprintf("recv=%s", data))
+func (l *Lora) Recv(data string) (string, error) {
+	return l.tx(fmt.Sprintf("recv=%s", data))
 }
 
 // GetRfConfig get RF parameters
-func (l *Lora) GetRfConfig() {
-	l.tx("rf_config")
+func (l *Lora) GetRfConfig() (string, error) {
+	return l.tx("rf_config")
 }
 
 // SetRfConfig Set RF parameters
-func (l *Lora) SetRfConfig(parameters string) {
-	l.tx(fmt.Sprintf("rf_config=%s", parameters))
+func (l *Lora) SetRfConfig(parameters string) (string, error) {
+	return l.tx(fmt.Sprintf("rf_config=%s", parameters))
 }
 
 // Txc send LoraP2P message
-func (l *Lora) Txc(parameters string) {
-	l.tx(fmt.Sprintf("txc=%s", parameters))
+func (l *Lora) Txc(parameters string) (string, error) {
+	return l.tx(fmt.Sprintf("txc=%s", parameters))
 }
 
 // Rxc set module in LoraP2P receive mode
-func (l *Lora) Rxc(enable int) {
-	l.tx(fmt.Sprintf("rxc=%d", enable))
+func (l *Lora) Rxc(enable int) (string, error) {
+	return l.tx(fmt.Sprintf("rxc=%d", enable))
 }
 
 // TxStop stops LoraP2P TX
-func (l *Lora) TxStop() {
-	l.tx("tx_stop")
+func (l *Lora) TxStop() (string, error) {
+	return l.tx("tx_stop")
 }
 
 // Stop LoraP2P RX
-func (l *Lora) RxStop() {
-	l.tx("rx_stop")
+func (l *Lora) RxStop() (string, error) {
+	return l.tx("rx_stop")
 }
 
 //
@@ -230,13 +224,13 @@ func (l *Lora) RxStop() {
 //
 
 // GetStatus get radio statistics
-func (l *Lora) GetRadioStatus() {
-	l.tx("status")
+func (l *Lora) GetRadioStatus() (string, error) {
+	return l.tx("status")
 }
 
 // SetStatus clear radio statistics
-func (l *Lora) ClearRadioStatus() {
-	l.tx("status=0")
+func (l *Lora) ClearRadioStatus() (string, error) {
+	return l.tx("status=0")
 }
 
 func createCmd(cmd string) []byte {
@@ -249,13 +243,13 @@ func createCmd(cmd string) []byte {
 //
 
 // GetUART get UART configurations
-func (l *Lora) GetUART() {
-	l.tx("uart")
+func (l *Lora) GetUART() (string, error) {
+	return l.tx("uart")
 }
 
 // SetUART set UART configurations
-func (l *Lora) SetUART(configuration string) {
-	l.tx(fmt.Sprintf("uart=%s", configuration))
+func (l *Lora) SetUART(configuration string) (string, error) {
+	return l.tx(fmt.Sprintf("uart=%s", configuration))
 }
 
 func newConfig(config *serial.Config) config {
