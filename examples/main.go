@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 	"github.com/tarm/serial"
+	"log"
 
 	"github.com/calvernaz/rak811"
 )
@@ -14,8 +15,13 @@ func main() {
 
 	lora, err := rak811.New(cfg)
 	if err != nil {
-		errors.Wrap(err, "failed to create rak811 instance")
+		log.Fatal(err, "failed to create rak811 instance")
 	}
 
-	lora.Version()
+	resp, err := lora.Version()
+	if err != nil {
+		log.Fatal("failed to get version")
+	}
+
+	fmt.Println(resp)
 }
