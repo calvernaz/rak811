@@ -354,6 +354,67 @@ func TestLora_Recv(t *testing.T) {
 	})
 }
 
+
+func TestLora_GetRfConfig(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK868100000,12,0,1,8,20\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("get lorap2p configuration", func(t *testing.T) {
+		res, err := lora.GetRfConfig()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_Txc(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte(OK),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("set lorap2p tx continues", func(t *testing.T) {
+		res, err := lora.Txc("1,10,64")
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
+func TestLora_GetRadioStatus(t *testing.T) {
+	fsp := &FakeSerialPort{
+		buf: []byte("OK1,2,3,4,5,6,7\r\n"),
+	}
+
+	lora := &Lora{
+		port: fsp,
+	}
+
+	t.Run("get the radio statistics", func(t *testing.T) {
+		res, err := lora.GetRadioStatus()
+		if err != nil {
+			t.Errorf("error %v", err)
+		}
+		if bytes.Compare([]byte(res), fsp.buf) != 0 {
+			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		}
+	})
+}
+
 type FakeSerialPort struct {
 	buf []byte
 }
