@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/davecheney/gpio"
@@ -13,7 +14,6 @@ import (
 )
 
 type config func(*serial.Config)
-
 
 type Lora struct {
 	port io.ReadWriteCloser
@@ -46,8 +46,21 @@ func (l *Lora) tx(cmd string) (string, error) {
 		log.Printf("failed to write command %s", cmd)
 	}
 
-	reader := bufio.NewReader(l.port)
-	return reader.ReadString('\n')
+	// The response might contain more than a single line so read up to the OK string.
+	scanner := bufio.NewScanner(bufio.NewReader(l.port))
+	var resp string
+	for scanner.Scan() {
+		t := scanner.Text()
+		resp += t
+		if t == "OK" {
+			return resp, nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("reading response err:%v", err)
+	}
+	return "", fmt.Errorf("unexpected response:%v", resp)
 }
 
 //
@@ -72,16 +85,24 @@ func (l *Lora) Reset(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("reset=%d", mode))
 }
 
-func (l *Lora) HardReset() {
+func (l *Lora) HardReset() error {
 	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
 	if err != nil {
-		fmt.Printf("Error opening pin! %s\n", err)
-		return
+		return fmt.Errorf("error opening pin err:%v", err)
 	}
 	pin.Clear()
 	time.Sleep(10 * time.Millisecond)
 	pin.Set()
 	time.Sleep(10 * time.Millisecond)
+
+	// After the reset need to drain the response from the serial port.
+	reader := bufio.NewReader(l.port)
+	_, err = reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("read err:%v", err)
+	}
+
+	return nil
 }
 
 // Reload set LoRaWAN and LoraP2P configurations to default
@@ -121,7 +142,7 @@ func (l *Lora) Close() {
 
 // SetConfig set LoRaWAN configurations
 func (l *Lora) SetConfig(config string) (string, error) {
-	return l.tx(config)
+	return l.tx(fmt.Sprintf("set_config=%v", config))
 }
 
 // Get LoRaWAN configuration
@@ -141,7 +162,20 @@ func (l *Lora) SetBand(band string) (string, error) {
 
 // JoinOTAA join the configured network in OTAA mode
 func (l *Lora) JoinOTAA() (string, error) {
-	return l.tx("join=otaa")
+	if _, err := l.tx("join=otaa"); err != nil {
+		return "", err
+	}
+
+	// Wait for the registration success event.
+	resp, err := bufio.NewReader(l.port).ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("read err:%v", err)
+	}
+	resp = strings.TrimSpace(resp)
+	if resp != "at+recv=3,0,0" {
+		return "", fmt.Errorf("unexpected response:%v", resp)
+	}
+	return resp, nil
 }
 
 // JoinABP join the configured network in ABP mode
@@ -181,7 +215,21 @@ func (l *Lora) GetABPInfo() (string, error) {
 
 // Send send data to LoRaWAN network
 func (l *Lora) Send(data string) (string, error) {
-	return l.tx(fmt.Sprintf("send=%s", data))
+	if _, err := l.tx(fmt.Sprintf("send=%s", data)); err != nil {
+		return "", err
+	}
+
+	// Wait for the send success event.
+	resp, err := bufio.NewReader(l.port).ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("read err:%v", err)
+	}
+
+	resp = strings.TrimSpace(resp)
+	if resp != "at+recv=2,0,0" {
+		return "", fmt.Errorf("unexpected ack response:%v-", resp)
+	}
+	return resp, nil
 }
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
