@@ -85,10 +85,11 @@ func (l *Lora) Reset(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("reset=%d", mode))
 }
 
-func (l *Lora) HardReset() error {
+// HardReset the module by reseting the hat pins.
+func (l *Lora) HardReset() (string, error) {
 	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
 	if err != nil {
-		return fmt.Errorf("error opening pin err:%v", err)
+		return "", fmt.Errorf("error opening pin err:%v", err)
 	}
 	pin.Clear()
 	time.Sleep(10 * time.Millisecond)
@@ -97,12 +98,17 @@ func (l *Lora) HardReset() error {
 
 	// After the reset need to drain the response from the serial port.
 	reader := bufio.NewReader(l.port)
-	_, err = reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("read err:%v", err)
+	var resp string
+	for x := 0; x < 4; x++ {
+		r, err := reader.ReadString('\n')
+		if err != nil {
+			return resp, fmt.Errorf("read err:%v", err)
+		}
+		resp += r
 	}
-
-	return nil
+	// The module needs some time to be able to accept new commands.
+	time.Sleep(1 * time.Second)
+	return resp, nil
 }
 
 // Reload set LoRaWAN and LoraP2P configurations to default
