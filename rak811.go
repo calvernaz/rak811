@@ -10,8 +10,13 @@ import (
 
 	"github.com/davecheney/gpio"
 	"github.com/davecheney/gpio/rpi"
+	"github.com/pkg/errors"
 	"github.com/tarm/serial"
 )
+
+// ErrTimeout is returns when the serial port doesnt return any data
+// within the test ReadTimeout
+var ErrTimeout = errors.New("no response within the set timeout")
 
 type config func(*serial.Config)
 
@@ -58,6 +63,9 @@ func (l *Lora) tx(cmd string) (string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		if err == io.EOF {
+			return "", ErrTimeout
+		}
 		log.Fatalf("reading response err:%v", err)
 	}
 	return "", fmt.Errorf("unexpected response:%v", resp)
@@ -102,6 +110,9 @@ func (l *Lora) HardReset() (string, error) {
 	for x := 0; x < 4; x++ {
 		r, err := reader.ReadString('\n')
 		if err != nil {
+			if err == io.EOF {
+				return "", ErrTimeout
+			}
 			return resp, fmt.Errorf("read err:%v", err)
 		}
 		resp += r
@@ -175,6 +186,9 @@ func (l *Lora) JoinOTAA() (string, error) {
 	// Wait for the registration success event.
 	resp, err := bufio.NewReader(l.port).ReadString('\n')
 	if err != nil {
+		if err == io.EOF {
+			return "", ErrTimeout
+		}
 		return "", fmt.Errorf("read err:%v", err)
 	}
 	resp = strings.TrimSpace(resp)
@@ -228,6 +242,9 @@ func (l *Lora) Send(data string) (string, error) {
 	// Wait for the send success event.
 	resp, err := bufio.NewReader(l.port).ReadString('\n')
 	if err != nil {
+		if err == io.EOF {
+			return "", ErrTimeout
+		}
 		return "", fmt.Errorf("read err:%v", err)
 	}
 
