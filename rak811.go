@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 
@@ -57,18 +56,15 @@ func (l *Lora) tx(cmd string) (string, error) {
 	for scanner.Scan() {
 		t := scanner.Text()
 		resp += t
-		if t == "OK" {
-			return resp, nil
-		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		if err == io.EOF {
 			return "", ErrTimeout
 		}
-		log.Fatalf("reading response err:%v", err)
+		return "", fmt.Errorf("failed reading response: %s", err)
 	}
-	return "", fmt.Errorf("unexpected response:%v", resp)
+	return resp, nil
 }
 
 //
