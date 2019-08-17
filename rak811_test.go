@@ -1,8 +1,11 @@
 package rak811
 
 import (
+	"bufio"
 	"bytes"
+	"strings"
 	"testing"
+	"time"
 )
 
 const OK = "OK\r\n"
@@ -35,9 +38,7 @@ func TestCreateCmd(t *testing.T) {
 }
 
 func TestLora_Version(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK11.22.33.44\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK11.22.33.44\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -48,17 +49,14 @@ func TestLora_Version(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Sleep(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
-
+	fsp := newFakeFakeSerialPort([]byte(OK))
 	lora := &Lora{
 		port: fsp,
 	}
@@ -68,17 +66,14 @@ func TestLora_Sleep(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Reset(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
-
+	fsp := newFakeFakeSerialPort([]byte(OK))
 	lora := &Lora{
 		port: fsp,
 	}
@@ -88,16 +83,14 @@ func TestLora_Reset(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Reload(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -108,16 +101,14 @@ func TestLora_Reload(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_SetMode(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -128,16 +119,14 @@ func TestLora_SetMode(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_SetRecvEx(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -148,16 +137,14 @@ func TestLora_SetRecvEx(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_SetConfig(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -168,16 +155,14 @@ func TestLora_SetConfig(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetConfig(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -188,16 +173,14 @@ func TestLora_GetConfig(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetBand(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OKEU868\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OKEU868\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -208,56 +191,51 @@ func TestLora_GetBand(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_JoinOTAA(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK + JoinSuccess + "\r\n"))
 
 	lora := &Lora{
 		port: fsp,
 	}
 
 	t.Run("activation over the air", func(t *testing.T) {
-		res, err := lora.JoinOTAA()
+		res, err := lora.JoinOTAA(1 * time.Second)
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+
+		if bytes.Compare([]byte(JoinSuccess), fsp.At()) != 0 {
+			t.Fatalf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Signal(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK10 11\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK10 11\r\n"))
 
 	lora := &Lora{
 		port: fsp,
 	}
 
 	t.Run("signal from Lora gateway", func(t *testing.T) {
-		res, err := lora.JoinOTAA()
+		res, err := lora.Signal()
 		if err != nil {
-			t.Errorf("error %v", err)
+			t.Fatalf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetDataRate(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK))
 
 	lora := &Lora{
 		port: fsp,
@@ -268,16 +246,14 @@ func TestLora_GetDataRate(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetLinkCnt(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK1,2\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK1,2\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -288,16 +264,14 @@ func TestLora_GetLinkCnt(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetABPInfo(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK1,2,64,32\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK1,2,64,32\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -308,16 +282,14 @@ func TestLora_GetABPInfo(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Send(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte(OK + "at+recv=2,0,0\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -326,18 +298,16 @@ func TestLora_Send(t *testing.T) {
 	t.Run("send packet string", func(t *testing.T) {
 		res, err := lora.Send("0,1,DEADBEFF")
 		if err != nil {
-			t.Errorf("error %v", err)
+			t.Fatalf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Recv(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK1,2\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK1,2\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -348,17 +318,14 @@ func TestLora_Recv(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
-
 func TestLora_GetRfConfig(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK868100000,12,0,1,8,20\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK868100000,12,0,1,8,20\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -369,17 +336,14 @@ func TestLora_GetRfConfig(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_Txc(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte(OK),
-	}
-
+	fsp := newFakeFakeSerialPort([]byte(OK))
 	lora := &Lora{
 		port: fsp,
 	}
@@ -389,16 +353,14 @@ func TestLora_Txc(t *testing.T) {
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
 func TestLora_GetRadioStatus(t *testing.T) {
-	fsp := &FakeSerialPort{
-		buf: []byte("OK1,2,3,4,5,6,7\r\n"),
-	}
+	fsp := newFakeFakeSerialPort([]byte("OK1,2,3,4,5,6,7\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -407,27 +369,46 @@ func TestLora_GetRadioStatus(t *testing.T) {
 	t.Run("get the radio statistics", func(t *testing.T) {
 		res, err := lora.GetRadioStatus()
 		if err != nil {
-			t.Errorf("error %v", err)
+			t.Fatalf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.buf) != 0 {
-			t.Errorf("got %q, want %q", res, []byte(fsp.buf))
+		if bytes.Compare([]byte(res), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", res, fsp.At())
 		}
 	})
 }
 
-type FakeSerialPort struct {
-	buf []byte
+func newFakeFakeSerialPort(buf []byte) *FakeSerialPort {
+	reader := bufio.NewReader(bytes.NewReader(buf))
+
+	return &FakeSerialPort{
+		reader: reader,
+	}
 }
 
-func (f FakeSerialPort) Read(p []byte) (n int, err error) {
-	n = copy(p, f.buf)
+type FakeSerialPort struct {
+	reader *bufio.Reader
+	last   []byte
+}
+
+func (f *FakeSerialPort) Read(p []byte) (n int, err error) {
+	line, err := f.reader.ReadBytes('\n')
+	if err != nil {
+		return 0, err
+	}
+	n = copy(p, line)
+	f.last = line
 	return n, nil
 }
 
-func (FakeSerialPort) Write(p []byte) (n int, err error) {
+func (*FakeSerialPort) Write(p []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (FakeSerialPort) Close() error {
+func (*FakeSerialPort) Close() error {
 	return nil
+}
+
+func (f *FakeSerialPort) At() []byte {
+	at := strings.TrimSuffix(strings.TrimSuffix(string(f.last), "\n"), "\r")
+	return []byte(at)
 }

@@ -57,7 +57,7 @@ func (l *Lora) tx(cmd string) (string, error) {
 	for scanner.Scan() {
 		t := scanner.Text()
 		resp += t
-		if t == "OK" {
+		if strings.HasPrefix(t, "OK") {
 			return resp, nil
 		}
 	}
@@ -68,7 +68,7 @@ func (l *Lora) tx(cmd string) (string, error) {
 		}
 		log.Fatalf("reading response err:%v", err)
 	}
-	return "", fmt.Errorf("unexpected response:%v", resp)
+	return "", fmt.Errorf("unexpected tx response:%v cmd:%v", resp, cmd)
 }
 
 //
@@ -147,6 +147,7 @@ func (l *Lora) SetRecvEx(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("recv_ex=%d", mode))
 }
 
+// Close the serial port.
 func (l *Lora) Close() {
 	if err := l.port.Close(); err != nil {
 		fmt.Printf("failed closing port, %v", err)
@@ -162,40 +163,64 @@ func (l *Lora) SetConfig(config string) (string, error) {
 	return l.tx(fmt.Sprintf("set_config=%v", config))
 }
 
-// Get LoRaWAN configuration
+// GetConfig LoRaWAN configuration
 func (l *Lora) GetConfig(key string) (string, error) {
 	return l.tx(fmt.Sprintf("get_config=%s", key))
 }
 
-// Get LoRaWAN band region
+// GetBand LoRaWAN band region
 func (l *Lora) GetBand() (string, error) {
 	return l.tx("band")
 }
 
-// Set LoRaWAN band region
+// SetBand LoRaWAN band region
 func (l *Lora) SetBand(band string) (string, error) {
 	return l.tx(fmt.Sprintf("band=%s", band))
 }
 
-// JoinOTAA join the configured network in OTAA mode
-func (l *Lora) JoinOTAA() (string, error) {
+const (
+	// JoinSuccess successfull join.
+	JoinSuccess = "at+recv=3,0,0"
+	// JoinFail incorrect join config parameters.
+	JoinFail = "at+recv=4,0,0"
+	// JoinTimeout no response from a gateway.
+	JoinTimeout = "at+recv=6,0,0"
+)
+
+// JoinOTAA join the configured network in OTAA mode.
+// The module doesn't accept any other command before it returns a response.
+// Response: JoinSuccess, JoinFail, JoinTimeout
+// Returns an error when the timeout argument expires.
+// This is as a fail safe so that the caller can reset the module
+// if it doesn't return anything for a long period.
+func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
 	if _, err := l.tx("join=otaa"); err != nil {
 		return "", err
 	}
-
-	// Wait for the registration success event.
-	resp, err := bufio.NewReader(l.port).ReadString('\n')
-	if err != nil {
-		if err == io.EOF {
-			return "", ErrTimeout
+	var (
+		resp  string
+		err   error
+		start = time.Now()
+	)
+	for {
+		resp, err = bufio.NewReader(l.port).ReadString('\n')
+		resp = strings.TrimSuffix(strings.TrimSpace(resp), "\r")
+		if err == nil && resp != "" {
+			switch resp {
+			case JoinSuccess:
+				return JoinSuccess, nil
+			case JoinFail:
+				return JoinFail, nil
+			case JoinTimeout:
+				return JoinTimeout, nil
+			default:
+				return "", errors.Errorf("invalid join response resp:%v", resp)
+			}
 		}
-		return "", fmt.Errorf("read err:%v", err)
+		if time.Since(start) > timeout {
+			return "", errors.New("no response after the set timeout")
+		}
 	}
-	resp = strings.TrimSpace(resp)
-	if resp != "at+recv=3,0,0" {
-		return "", fmt.Errorf("unexpected response:%v", resp)
-	}
-	return resp, nil
 }
 
 // JoinABP join the configured network in ABP mode
