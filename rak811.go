@@ -50,12 +50,10 @@ func (l *Lora) tx(cmd string) (string, error) {
 		return "", fmt.Errorf("failed to write command %+q with: %s", cmd, err)
 	}
 
-	// The response might contain more than a single line so read up to the OK string.
 	scanner := bufio.NewScanner(bufio.NewReader(l.port))
 	var resp string
 	for scanner.Scan() {
-		t := scanner.Text()
-		resp += t
+		resp += scanner.Text()
 	}
 
 	if err := scanner.Err(); err != nil {
