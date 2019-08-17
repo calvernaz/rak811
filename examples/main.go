@@ -15,12 +15,12 @@ func main() {
 
 	lora, err := rak811.New(cfg)
 	if err != nil {
-		log.Fatal(err, "failed to create rak811 instance")
+		log.Fatal("failed to create rak811 instance: ", err)
 	}
 
 	resp, err := lora.Version()
 	if err != nil {
-		log.Fatalf("failed to get version: ", err)
+		log.Fatal("failed to get version: ", err)
 	}
 
 	fmt.Println(resp)
