@@ -48,7 +48,7 @@ func New(conf *serial.Config) (*Lora, error) {
 
 func (l *Lora) tx(cmd string) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		log.Printf("failed to write command %+q with: %s", cmd, err)
+		return "", fmt.Errorf("failed to write command %+q with: %s", cmd, err)
 	}
 
 	// The response might contain more than a single line so read up to the OK string.
