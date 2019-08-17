@@ -20,7 +20,7 @@ func main() {
 
 	resp, err := lora.Version()
 	if err != nil {
-		log.Fatal("failed to get version")
+		log.Fatalf("failed to get version: ", err)
 	}
 
 	fmt.Println(resp)
