@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 
@@ -17,6 +16,8 @@ import (
 // ErrTimeout is returns when the serial port doesnt return any data
 // within the test ReadTimeout
 var ErrTimeout = errors.New("no response within the set timeout")
+
+const OK = "OK"
 
 type config func(*serial.Config)
 
@@ -35,7 +36,6 @@ func New(conf *serial.Config) (*Lora, error) {
 	}
 
 	newConfig(conf)(defaultConfig)
-
 	port, err := serial.OpenPort(defaultConfig)
 	if err != nil {
 		return nil, err
@@ -48,27 +48,19 @@ func New(conf *serial.Config) (*Lora, error) {
 
 func (l *Lora) tx(cmd string) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		log.Printf("failed to write command %s", cmd)
+		return "", fmt.Errorf("failed to write command %q with: %s", cmd, err)
 	}
 
-	// The response might contain more than a single line so read up to the OK string.
 	scanner := bufio.NewScanner(bufio.NewReader(l.port))
 	var resp string
 	for scanner.Scan() {
-		t := scanner.Text()
-		resp += t
-		if strings.HasPrefix(t, "OK") {
-			return resp, nil
-		}
+		resp += scanner.Text()
 	}
 
 	if err := scanner.Err(); err != nil {
-		if err == io.EOF {
-			return "", ErrTimeout
-		}
-		log.Fatalf("reading response err:%v", err)
+		return "", fmt.Errorf("failed reading response: %s", err)
 	}
-	return "", fmt.Errorf("unexpected tx response:%v cmd:%v", resp, cmd)
+	return resp, nil
 }
 
 //
@@ -99,26 +91,23 @@ func (l *Lora) HardReset() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error opening pin err:%v", err)
 	}
+
 	pin.Clear()
 	time.Sleep(10 * time.Millisecond)
 	pin.Set()
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(2000 * time.Millisecond)
+	pin.Close()
 
-	// After the reset need to drain the response from the serial port.
-	reader := bufio.NewReader(l.port)
+	scanner := bufio.NewScanner(bufio.NewReader(l.port))
 	var resp string
-	for x := 0; x < 4; x++ {
-		r, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				return "", ErrTimeout
-			}
-			return resp, fmt.Errorf("read err:%v", err)
-		}
-		resp += r
+	for scanner.Scan() {
+		resp += scanner.Text()
 	}
-	// The module needs some time to be able to accept new commands.
-	time.Sleep(1 * time.Second)
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("failed reading response: %s", err)
+	}
+
 	return resp, nil
 }
 
@@ -194,14 +183,14 @@ const (
 // This is as a fail safe so that the caller can reset the module
 // if it doesn't return anything for a long period.
 func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
-	if _, err := l.tx("join=otaa"); err != nil {
+	resp, err := l.tx("join=otaa")
+	if err != nil {
 		return "", err
 	}
-	var (
-		resp  string
-		err   error
-		start = time.Now()
-	)
+	if resp != OK {
+		return "", errors.Errorf("invalid join request response resp:%v", resp)
+	}
+	start := time.Now()
 	for {
 		resp, err = bufio.NewReader(l.port).ReadString('\n')
 		resp = strings.TrimSuffix(strings.TrimSpace(resp), "\r")
@@ -260,12 +249,16 @@ func (l *Lora) GetABPInfo() (string, error) {
 
 // Send send data to LoRaWAN network
 func (l *Lora) Send(data string) (string, error) {
-	if _, err := l.tx(fmt.Sprintf("send=%s", data)); err != nil {
+	resp, err := l.tx(fmt.Sprintf("send=%s", data))
+	if err != nil {
 		return "", err
+	}
+	if resp != OK {
+		return "", errors.Errorf("invalid send request response resp:%v", resp)
 	}
 
 	// Wait for the send success event.
-	resp, err := bufio.NewReader(l.port).ReadString('\n')
+	resp, err = bufio.NewReader(l.port).ReadString('\n')
 	if err != nil {
 		if err == io.EOF {
 			return "", ErrTimeout

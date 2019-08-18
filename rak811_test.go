@@ -1,14 +1,12 @@
 package rak811
 
 import (
-	"bufio"
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 	"time"
 )
-
-const OK = "OK\r\n"
 
 func TestCreateCmd(t *testing.T) {
 	tests := []struct {
@@ -38,19 +36,19 @@ func TestCreateCmd(t *testing.T) {
 }
 
 func TestLora_Version(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK11.22.33.44\r\n"))
+	fsp := newFakeFakeSerialPort([]byte("OK2.0.3.0\r\n"))
 
 	lora := &Lora{
 		port: fsp,
 	}
 
 	t.Run("get software version", func(t *testing.T) {
-		res, err := lora.Version()
+		actual, err := lora.Version()
 		if err != nil {
 			t.Errorf("error %v", err)
 		}
-		if bytes.Compare([]byte(res), fsp.At()) != 0 {
-			t.Errorf("got %q, want %q", res, fsp.At())
+		if bytes.Compare([]byte(actual), fsp.At()) != 0 {
+			t.Errorf("got %q, want %q", actual, fsp.At())
 		}
 	})
 }
@@ -198,7 +196,7 @@ func TestLora_GetBand(t *testing.T) {
 }
 
 func TestLora_JoinOTAA(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK + JoinSuccess + "\r\n"))
+	fsp := newFakeFakeSerialPort([]byte(OK+"\r\n"), []byte(JoinSuccess+"\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -289,7 +287,7 @@ func TestLora_GetABPInfo(t *testing.T) {
 }
 
 func TestLora_Send(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK + "at+recv=2,0,0\r\n"))
+	fsp := newFakeFakeSerialPort([]byte(OK+"\r\n"), []byte("at+recv=2,0,0\r\n"))
 
 	lora := &Lora{
 		port: fsp,
@@ -377,38 +375,42 @@ func TestLora_GetRadioStatus(t *testing.T) {
 	})
 }
 
-func newFakeFakeSerialPort(buf []byte) *FakeSerialPort {
-	reader := bufio.NewReader(bytes.NewReader(buf))
-
+func newFakeFakeSerialPort(data ...[]byte) *FakeSerialPort {
 	return &FakeSerialPort{
-		reader: reader,
+		responses: data,
 	}
 }
 
 type FakeSerialPort struct {
-	reader *bufio.Reader
-	last   []byte
+	responses [][]byte // Each element is returns as a separate response.
+	current   []byte
+	next      bool
 }
 
 func (f *FakeSerialPort) Read(p []byte) (n int, err error) {
-	line, err := f.reader.ReadBytes('\n')
-	if err != nil {
-		return 0, err
+	if len(f.responses) == 0 {
+		return 0, io.EOF
 	}
-	n = copy(p, line)
-	f.last = line
-	return n, nil
+
+	if f.next {
+		f.next = false
+		return 0, io.EOF
+	}
+	f.current = f.responses[0]
+	copy(p, f.current)
+	f.responses = f.responses[1:]
+	f.next = true
+	return len(f.current), nil
 }
 
-func (*FakeSerialPort) Write(p []byte) (n int, err error) {
-	return 0, nil
+func (f *FakeSerialPort) Write(p []byte) (n int, err error) {
+	return len(p), nil
 }
 
 func (*FakeSerialPort) Close() error {
 	return nil
 }
 
-func (f *FakeSerialPort) At() []byte {
-	at := strings.TrimSuffix(strings.TrimSuffix(string(f.last), "\n"), "\r")
-	return []byte(at)
+func (f FakeSerialPort) At() []byte {
+	return []byte(strings.TrimSuffix(string(f.current), "\r\n"))
 }
