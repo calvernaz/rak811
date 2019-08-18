@@ -18,7 +18,12 @@ func main() {
 		log.Fatal("failed to create rak811 instance: ", err)
 	}
 
-	resp, err := lora.Version()
+	resp, err := lora.HardReset()
+	if err != nil {
+		log.Fatal("failed to reset: ", err)
+	}
+
+	resp, err = lora.Version()
 	if err != nil {
 		log.Fatal("failed to get version: ", err)
 	}
