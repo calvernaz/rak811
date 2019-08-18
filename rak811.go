@@ -34,7 +34,6 @@ func New(conf *serial.Config) (*Lora, error) {
 	}
 
 	newConfig(conf)(defaultConfig)
-
 	port, err := serial.OpenPort(defaultConfig)
 	if err != nil {
 		return nil, err
@@ -47,7 +46,7 @@ func New(conf *serial.Config) (*Lora, error) {
 
 func (l *Lora) tx(cmd string) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		return "", fmt.Errorf("failed to write command %+q with: %s", cmd, err)
+		return "", fmt.Errorf("failed to write command %q with: %s", cmd, err)
 	}
 
 	scanner := bufio.NewScanner(bufio.NewReader(l.port))
