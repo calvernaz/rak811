@@ -9,7 +9,6 @@ import (
 
 	"github.com/davecheney/gpio"
 	"github.com/davecheney/gpio/rpi"
-	"github.com/pkg/errors"
 	"github.com/tarm/serial"
 )
 
@@ -50,7 +49,7 @@ func New(conf *serial.Config) (*Lora, error) {
 
 func (l *Lora) txr(cmd string, lines int) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		return "", errors.Wrapf(err, "writing a command:%v", cmd)
+		return "", fmt.Errorf("failed to write command %q with: %s", cmd, err)
 	}
 	return l.tr(lines)
 }
@@ -67,14 +66,14 @@ func (l *Lora) tr(lines int) (string, error) {
 				if err == io.EOF { // The serial port has a max timeout of 25sec so we rely on the l.timeout.
 					continue
 				}
-				return "", errors.Wrap(err, "failed read")
+				return "", fmt.Wrap(err, "failed read")
 			}
 			if strings.HasPrefix(r, "ERROR") {
-				return "", errors.Errorf(r)
+				return "", fmt.Error(r)
 			}
 			resp += r
 			if time.Since(start) > l.timeout {
-				return "", errors.Errorf("no response within:%v", l.timeout)
+				return "", fmt.Errorf("no response within:%v", l.timeout)
 			}
 			break
 		}
@@ -113,7 +112,8 @@ func (l *Lora) Reset(mode int) (string, error) {
 func (l *Lora) HardReset() (string, error) {
 	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
 	if err != nil {
-		return "", errors.Wrapf(err, "opening pin")
+		return "", fmt.Errorf("error opening pin err:%v", err)
+
 	}
 	pin.Clear()
 	time.Sleep(10 * time.Millisecond)
@@ -141,7 +141,7 @@ func (l *Lora) SetMode(mode int) (string, error) {
 		return "", err
 	}
 	if !strings.HasSuffix(resp, "OK") {
-		return "", errors.Errorf("unexpected response:", resp)
+		return "", fmt.Errorf("unexpected response:", resp)
 	}
 	return resp, nil
 }
@@ -210,7 +210,7 @@ func (l *Lora) JoinOTAA() (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
+		return "", fmt.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
@@ -262,7 +262,7 @@ func (l *Lora) Send(data string) (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
+		return "", fmt.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
