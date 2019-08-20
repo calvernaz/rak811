@@ -210,7 +210,7 @@ func (l *Lora) JoinOTAA() (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", errors.Errorf("invalid join request response resp:%v", resp)
+		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
@@ -262,7 +262,7 @@ func (l *Lora) Send(data string) (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", errors.Errorf("invalid send request response resp:%v", resp)
+		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
