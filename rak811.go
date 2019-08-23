@@ -2,6 +2,7 @@ package rak811
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -24,17 +25,17 @@ type Lora struct {
 	timeout time.Duration
 }
 
+var defaultConfig = &serial.Config{
+	Name:        "/dev/serial0",
+	Baud:        115200,
+	ReadTimeout: 1500 * time.Millisecond,
+	Parity:      serial.ParityNone,
+	StopBits:    serial.Stop1,
+	Size:        8,
+}
+
 // New sets the lora module configuration.
 func New(conf *serial.Config) (*Lora, error) {
-	defaultConfig := &serial.Config{
-		Name:        "/dev/serial0",
-		Baud:        115200,
-		ReadTimeout: 1500 * time.Millisecond,
-		Parity:      serial.ParityNone,
-		StopBits:    serial.Stop1,
-		Size:        8,
-	}
-
 	newConfig(conf)(defaultConfig)
 	port, err := serial.OpenPort(defaultConfig)
 	if err != nil {
@@ -66,10 +67,10 @@ func (l *Lora) tr(lines int) (string, error) {
 				if err == io.EOF { // The serial port has a max timeout of 25sec so we rely on the l.timeout.
 					continue
 				}
-				return "", fmt.Wrap(err, "failed read")
+				return "", fmt.Errorf("failed read err:%v", err)
 			}
 			if strings.HasPrefix(r, "ERROR") {
-				return "", fmt.Error(r)
+				return "", errors.New(r)
 			}
 			resp += r
 			if time.Since(start) > l.timeout {
@@ -141,7 +142,7 @@ func (l *Lora) SetMode(mode int) (string, error) {
 		return "", err
 	}
 	if !strings.HasSuffix(resp, "OK") {
-		return "", fmt.Errorf("unexpected response:", resp)
+		return "", fmt.Errorf("unexpected response:%v", resp)
 	}
 	return resp, nil
 }
@@ -210,7 +211,7 @@ func (l *Lora) JoinOTAA() (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", fmt.New(resp) // Convert the resp to an error so that the caller handle it properly.
+		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
@@ -262,7 +263,7 @@ func (l *Lora) Send(data string) (string, error) {
 		return "", err
 	}
 	if resp != OK {
-		return "", fmt.New(resp) // Convert the resp to an error so that the caller handle it properly.
+		return "", errors.New(resp) // Convert the resp to an error so that the caller handle it properly.
 	}
 	// The module doesn't accept any other command before it returns a response
 	// so need to wait for it.
@@ -339,6 +340,9 @@ func (l *Lora) SetUART(configuration string) (string, error) {
 
 func newConfig(config *serial.Config) config {
 	return func(defaultConfig *serial.Config) {
+		if config == nil {
+			return
+		}
 		if config.Baud > 0 {
 			defaultConfig.Baud = config.Baud
 		}
