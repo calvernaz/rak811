@@ -29,7 +29,7 @@ func New(conf *serial.Config) (*Lora, error) {
 	defaultConfig := &serial.Config{
 		Name:        "/dev/serial0",
 		Baud:        115200,
-		ReadTimeout: 1500 * time.Millisecond,
+		ReadTimeout: 1500 * time.Millisecond, // turns on the non-blocking mode
 		Parity:      serial.ParityNone,
 		StopBits:    serial.Stop1,
 		Size:        8,
@@ -248,30 +248,30 @@ func (l *Lora) GetABPInfo() (string, error) {
 	return l.tx("abp_info")
 }
 
-// Send send data to LoRaWAN network
+// Send sends data to LoRaWAN network, returns the event response
 func (l *Lora) Send(data string) (string, error) {
 	resp, err := l.tx(fmt.Sprintf("send=%s", data))
 	if err != nil {
 		return "", err
 	}
-	if resp != OK {
-		return "", errors.Errorf("invalid send request response resp:%v", resp)
+
+	if !strings.HasPrefix(resp, OK) {
+		return "", errors.New(resp)
 	}
 
-	// Wait for the send success event.
-	resp, err = bufio.NewReader(l.port).ReadString('\n')
-	if err != nil {
-		if err == io.EOF {
-			return "", ErrTimeout
+	reader := bufio.NewReader(l.port)
+	for {
+		resp, err = reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				continue
+			}
+			return "", errors.Wrap(err, "failed read response to send command")
 		}
-		return "", fmt.Errorf("read err:%v", err)
+		resp = strings.TrimSuffix(strings.TrimSpace(resp), "\r")
+		return resp, nil
 	}
 
-	resp = strings.TrimSpace(resp)
-	if resp != "at+recv=2,0,0" {
-		return "", fmt.Errorf("unexpected ack response:%v-", resp)
-	}
-	return resp, nil
 }
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
