@@ -40,5 +40,5 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to join: ", err)
 	}
-	fmt.Printf("Join: %s\n" + resp)
+	fmt.Printf("Join: %s\n", resp)
 }
