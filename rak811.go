@@ -187,10 +187,9 @@ func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp != OK {
+	if !strings.HasPrefix(resp,OK) {
 		return "", errors.Errorf("invalid join request response resp:%v", resp)
 	}
-	start := time.Now()
 	reader := bufio.NewReader(l.port)
 	for {
 		resp, err = reader.ReadString('\n')
@@ -206,9 +205,6 @@ func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
 			default:
 				return "", errors.Errorf("invalid join response resp:%v", resp)
 			}
-		}
-		if time.Since(start) > timeout {
-			return "", errors.New("no response after the set timeout")
 		}
 	}
 }
