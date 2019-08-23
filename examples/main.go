@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/tarm/serial"
 	"log"
+	"time"
 
 	"github.com/calvernaz/rak811"
 )
@@ -27,6 +28,17 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to get version: ", err)
 	}
+	fmt.Printf("Version: %s\n", resp[2:])
 
-	fmt.Println(resp)
+	resp, err = lora.GetConfig("dev_eui")
+	if err != nil {
+		log.Fatal("failed get config: ", err)
+	}
+	fmt.Printf("DevEUI: %s\n", resp[2:])
+
+	resp, err = lora.JoinOTAA(1 * time.Second)
+	if err != nil {
+		log.Fatal("failed to join: ", err)
+	}
+	fmt.Printf("Join: %s\n" + resp)
 }
