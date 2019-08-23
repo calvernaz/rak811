@@ -36,6 +36,25 @@ func main() {
 	}
 	fmt.Printf("DevEUI: %s\n", resp[2:])
 
+	resp, err = lora.SetConfig(fmt.Sprintf("dev_eui:%v", resp[2:]))
+	if err != nil {
+		log.Fatal("deveui err: ", err)
+	}
+	fmt.Printf("set devui: %v\n", resp)
+
+	resp, err = lora.SetConfig(fmt.Sprintf("app_eui:%v", "0000000000000000"))
+	if err != nil {
+		log.Fatal("appeui err: ", err)
+	}
+	fmt.Printf("set appeui: %v\n", resp)
+
+	resp, err = lora.SetConfig(fmt.Sprintf("app_key:%v", "xxx2801aa3adf8add26e149xxxxxxxxx"))
+	if err != nil {
+		log.Fatal("appkey err: ", err)
+	}
+	fmt.Printf("set appkey: %v\n", resp)
+
+
 	resp, err = lora.JoinOTAA(1 * time.Second)
 	if err != nil {
 		log.Fatal("failed to join: ", err)
