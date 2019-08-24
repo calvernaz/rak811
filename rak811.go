@@ -339,7 +339,6 @@ func readline(l *Lora) (string, error) {
 	reader := bufio.NewReader(l.port)
 	for {
 		resp, err := reader.ReadString('\n')
-		fmt.Printf("resp: %v, err: %v \n", resp, err)
 		if err != nil {
 			// serial timeout has triggered
 			if err == io.EOF {
