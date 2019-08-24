@@ -51,14 +51,20 @@ func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) 
 		return "", fmt.Errorf("failed to write command %q with: %s", cmd, err)
 	}
 
-	ch := make(chan struct{ string; error}, 1)
-
-	select {
-	case resp := <- ch:
-		return resp.string, resp.error
-	case <-time.After(3 * time.Second):
-		return "", errors.New("global timeout")
-	}
+	return fn(l)
+	//ch := make(chan struct{ string; error}, 1)
+	//go func(chan struct{string; error}) {
+	//	ch <- fn(l)
+	//}(ch)
+	//
+	//select {
+	//case resp := <- ch:
+	//	fmt.Println("tx:", resp)
+	//	close(ch)
+	//	return resp.string, resp.error
+	//case <-time.After(3 * time.Second):
+	//	return "", errors.New("global timeout")
+	//}
 
 }
 
