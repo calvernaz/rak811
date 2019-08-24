@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/tarm/serial"
 	"log"
-	"time"
 
 	"github.com/calvernaz/rak811"
 )
@@ -42,7 +41,7 @@ func main() {
 	}
 	fmt.Printf("set devui: %v\n", resp)
 
-	resp, err = lora.SetConfig(fmt.Sprintf("app_eui:%v", "0000000000000000"))
+	resp, err = lora.SetConfig(fmt.Sprintf("app_eui:%v", "0102030405060708"))
 	if err != nil {
 		log.Fatal("appeui err: ", err)
 	}
@@ -54,10 +53,17 @@ func main() {
 	}
 	fmt.Printf("set appkey: %v\n", resp)
 
-
 	resp, err = lora.JoinOTAA()
 	if err != nil {
 		log.Fatal("failed to join: ", err)
 	}
 	fmt.Printf("Join: %s\n", resp)
+
+	data := fmt.Sprintf("%x","hello world")
+	resp, err = lora.Send(fmt.Sprintf("1,1,%s", data))
+	if err != nil {
+		log.Fatal("failed to send: ", err)
+	}
+	fmt.Printf("Send: %s\n", resp)
+
 }
