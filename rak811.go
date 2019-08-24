@@ -172,7 +172,7 @@ func (l *Lora) SetBand(band string) (string, error) {
 // JoinOTAA join the configured network in OTAA mode.
 // The module doesn't accept any other command before it returns a response.
 // Response: JoinSuccess, JoinFail, JoinTimeout
-func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
+func (l *Lora) JoinOTAA() (string, error) {
 	return l.tx("join=otaa", func(l *Lora) (string, error) {
 		resp, err := readline(l)
 		if err != nil {

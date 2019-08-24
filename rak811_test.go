@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestCreateCmd(t *testing.T) {
@@ -203,7 +202,7 @@ func TestLora_JoinOTAA(t *testing.T) {
 	}
 
 	t.Run("activation over the air", func(t *testing.T) {
-		res, err := lora.JoinOTAA(1 * time.Second)
+		res, err := lora.JoinOTAA()
 		if err != nil {
 			t.Errorf("error %v", err)
 		}

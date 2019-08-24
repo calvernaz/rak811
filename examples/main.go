@@ -55,7 +55,7 @@ func main() {
 	fmt.Printf("set appkey: %v\n", resp)
 
 
-	resp, err = lora.JoinOTAA(1 * time.Second)
+	resp, err = lora.JoinOTAA()
 	if err != nil {
 		log.Fatal("failed to join: ", err)
 	}
