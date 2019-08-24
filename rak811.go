@@ -2,6 +2,7 @@ package rak811
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -9,8 +10,17 @@ import (
 
 	"github.com/davecheney/gpio"
 	"github.com/davecheney/gpio/rpi"
-	"github.com/pkg/errors"
 	"github.com/tarm/serial"
+)
+
+
+const (
+	// JoinSuccess successful join.
+	JoinSuccess = "at+recv=3,0,0"
+	// JoinFail incorrect join config parameters.
+	JoinFail = "at+recv=4,0,0"
+	// JoinTimeout no response from a gateway.
+	JoinTimeout = "at+recv=6,0,0"
 )
 
 // ErrTimeout is returns when the serial port doesnt return any data
@@ -52,20 +62,6 @@ func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) 
 	}
 
 	return fn(l)
-	//ch := make(chan struct{ string; error}, 1)
-	//go func(chan struct{string; error}) {
-	//	ch <- fn(l)
-	//}(ch)
-	//
-	//select {
-	//case resp := <- ch:
-	//	fmt.Println("tx:", resp)
-	//	close(ch)
-	//	return resp.string, resp.error
-	//case <-time.After(3 * time.Second):
-	//	return "", errors.New("global timeout")
-	//}
-
 }
 
 //
@@ -94,7 +90,7 @@ func (l *Lora) Reset(mode int) (string, error) {
 func (l *Lora) HardReset() (string, error) {
 	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
 	if err != nil {
-		return "", fmt.Errorf("error opening pin err:%v", err)
+		return "", fmt.Errorf("error opening pin err: %v", err)
 	}
 
 	pin.Clear()
@@ -172,28 +168,17 @@ func (l *Lora) SetBand(band string) (string, error) {
 	return l.tx(fmt.Sprintf("band=%s", band), readline)
 }
 
-const (
-	// JoinSuccess successfull join.
-	JoinSuccess = "at+recv=3,0,0"
-	// JoinFail incorrect join config parameters.
-	JoinFail = "at+recv=4,0,0"
-	// JoinTimeout no response from a gateway.
-	JoinTimeout = "at+recv=6,0,0"
-)
 
 // JoinOTAA join the configured network in OTAA mode.
 // The module doesn't accept any other command before it returns a response.
 // Response: JoinSuccess, JoinFail, JoinTimeout
-// Returns an error when the timeout argument expires.
-// This is as a fail safe so that the caller can reset the module
-// if it doesn't return anything for a long period.
 func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
 	return l.tx("join=otaa", func(l *Lora) (string, error) {
 		resp, err := readline(l)
 		if err != nil {
 			return "", err
 		}
-		
+
 		if strings.HasPrefix(resp, OK) {
 			resp, err := readline(l)
 			if err == nil && resp != "" {
@@ -205,11 +190,11 @@ func (l *Lora) JoinOTAA(timeout time.Duration) (string, error) {
 				case JoinTimeout:
 					return JoinTimeout, nil
 				default:
-					return "", errors.Errorf("invalid join response resp:%v", resp)
+					return "", fmt.Errorf("invalid join response resp: %v", resp)
 				}
 			}
 		}
-		return "", err
+		return resp, err
 	})
 }
 
@@ -230,7 +215,7 @@ func (l *Lora) GetDataRate() (string, error) {
 
 // SetDataRate set next send data rate
 func (l *Lora) SetDataRate(datarate string) (string, error) {
-return l.tx(fmt.Sprintf("dr=%s", datarate), readline)
+	return l.tx(fmt.Sprintf("dr=%s", datarate), readline)
 }
 
 // GetLinkCnt get LoRaWAN uplink and downlink counter
@@ -263,9 +248,10 @@ func (l *Lora) Send(data string) (string, error) {
 			}
 			return resp, nil
 		}
-		return "", err
+		return resp, errors.New(resp)
 	})
 }
+
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
 func (l *Lora) Recv(data string) (string, error) {
