@@ -250,7 +250,21 @@ func (l *Lora) GetABPInfo() (string, error) {
 
 // Send sends data to LoRaWAN network, returns the event response
 func (l *Lora) Send(data string) (string, error) {
-	return l.tx(fmt.Sprintf("send=%s", data), readline)
+	return l.tx(fmt.Sprintf("send=%s", data), func(l *Lora) (string, error) {
+		resp, err := readline(l)
+		if err != nil {
+			return "", err
+		}
+
+		if strings.HasPrefix(resp, OK) {
+			resp, err := readline(l)
+			if err != nil {
+				return "", err
+			}
+			return resp, nil
+		}
+		return "", err
+	})
 }
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
