@@ -15,8 +15,13 @@ import (
 
 const OK = "OK"
 
+// ErrTimeout is returned only when the module doesn't send any reply.
+// This means is it non functional and needs to be reset.
+var ErrTimeout = errors.New("no reply within the global timeout, the module needs a reset")
+
 type config func(*serial.Config)
 
+// Lora module for the rak811 pisupply hat.
 type Lora struct {
 	port io.ReadWriteCloser
 	// Returns an error when the global timeout argument expires.
@@ -26,16 +31,22 @@ type Lora struct {
 }
 
 var defaultConfig = &serial.Config{
-	Name:        "/dev/serial0",
-	Baud:        115200,
-	ReadTimeout: 1500 * time.Millisecond,
+	Name: "/dev/serial0",
+	Baud: 115200,
+	// Needs to be high enough to the highest response time from the module.
+	// Not getting an answer after this timeout means the module has hanged.
+	// The only way going forward is to return an error so that the lib consumer
+	// can decide to reset the module.
+	ReadTimeout: 10 * time.Minute,
 	Parity:      serial.ParityNone,
 	StopBits:    serial.Stop1,
 	Size:        8,
 }
 
 // New sets the lora module configuration.
+// The ReadTimeout is ignored as it is handled internally.
 func New(conf *serial.Config) (*Lora, error) {
+
 	newConfig(conf)(defaultConfig)
 	port, err := serial.OpenPort(defaultConfig)
 	if err != nil {
@@ -62,9 +73,13 @@ func (l *Lora) tr(lines int) (string, error) {
 	for line := 0; line < lines; line++ {
 		for {
 			r, err := reader.ReadString('\n')
-
 			if err != nil {
-				if err == io.EOF { // The serial port has a max timeout of 25sec so we rely on the l.timeout.
+				if time.Since(start) > l.timeout {
+					return "", ErrTimeout
+				}
+				// The serial port has a max timeout of 25sec so we ignore it and
+				// rely on the the global timeout.
+				if err == io.EOF {
 					continue
 				}
 				return "", fmt.Errorf("failed read err:%v", err)
@@ -73,9 +88,6 @@ func (l *Lora) tr(lines int) (string, error) {
 				return "", errors.New(r)
 			}
 			resp += r
-			if time.Since(start) > l.timeout {
-				return "", fmt.Errorf("no response within:%v", l.timeout)
-			}
 			break
 		}
 	}
@@ -348,9 +360,6 @@ func newConfig(config *serial.Config) config {
 		}
 		if config.Name != "" {
 			defaultConfig.Name = config.Name
-		}
-		if config.ReadTimeout > 0 {
-			defaultConfig.ReadTimeout = config.ReadTimeout
 		}
 	}
 }

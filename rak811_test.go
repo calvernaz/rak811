@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCreateCmd(t *testing.T) {
@@ -326,6 +327,23 @@ func TestLora_GetRadioStatus(t *testing.T) {
 	})
 }
 
+func TestLora_Timeout(t *testing.T) {
+	fsp := newFakeFakeSerialPort([]byte("OK"))
+	lora := newTestLora(fsp)
+	lora.timeout = 100 * time.Millisecond
+
+	t.Run("timeout", func(t *testing.T) {
+		_, err := lora.JoinOTAA()
+		if err == nil {
+			t.Fatalf("expected error , but got none")
+		}
+		if err != ErrTimeout {
+			t.Fatalf("expcted ErrTimeout error , but got:%v", err)
+
+		}
+	})
+}
+
 func newFakeFakeSerialPort(data ...[]byte) *FakeSerialPort {
 	return &FakeSerialPort{
 		responses: data,
@@ -339,7 +357,7 @@ type FakeSerialPort struct {
 
 func (f *FakeSerialPort) Read(p []byte) (n int, err error) {
 	if len(f.responses) == 0 {
-		return 0, nil
+		return 0, io.EOF
 	}
 
 	f.current = append(f.responses[0], []byte("\r\n")...)
