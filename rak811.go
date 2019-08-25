@@ -27,7 +27,10 @@ const (
 // within the test ReadTimeout
 var ErrTimeout = errors.New("no response within the set timeout")
 
-const OK = "OK"
+const (
+	OK = "OK"
+	ERROR = "ERROR"
+)
 
 type config func(*serial.Config)
 
@@ -328,8 +331,13 @@ func readline(l *Lora) (string, error) {
 		if err != nil {
 			// serial timeout has triggered
 			if err == io.EOF {
-				if strings.HasPrefix(resp, OK) {
+
+				if isOk(resp) {
 					return resp, nil
+				}
+
+				if err := isError(resp); err != nil {
+					return "", err
 				}
 				continue // proceed until the global timeout operation kicks in
 			}
@@ -353,4 +361,18 @@ func newConfig(config *serial.Config) config {
 			defaultConfig.ReadTimeout = config.ReadTimeout
 		}
 	}
+}
+
+func isOk(msg string) bool {
+	if strings.HasPrefix(msg, OK) {
+		return true
+	}
+	return false
+}
+
+func isError(msg string) error {
+	if strings.HasPrefix(msg, ERROR) {
+		return errors.New(msg)
+	}
+	return nil
 }
