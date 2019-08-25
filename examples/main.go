@@ -47,7 +47,7 @@ func main() {
 	}
 	fmt.Printf("set appeui: %v\n", resp)
 
-	resp, err = lora.SetConfig(fmt.Sprintf("app_key:%v", "xxx2801aa3adf8add26e149xxxxxxxxx"))
+	resp, err = lora.SetConfig(fmt.Sprintf("app_key:%v", "4ca2801aa3adf8add26e149bf8a0d440"))
 	if err != nil {
 		log.Fatal("appkey err: ", err)
 	}
@@ -65,7 +65,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to send: ", err)
 	}
-	fmt.Printf("Send: %s\n", resp)
+	fmt.Printf("Send tx success: %s\n", resp)
 
 	// at+send=1,2,010203040506 /*APP port :2, confirmed message*/
 	// at+recv=1,0,0
@@ -73,6 +73,6 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to send: ", err)
 	}
-	fmt.Printf("Send: %s\n", resp)
+	fmt.Printf("Send acknowledge by gateway: %s\n", resp)
 
 }
