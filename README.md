@@ -27,3 +27,7 @@ func main() {
 	fmt.Println(resp)
 }
 ```
+
+To run the example, use `sudo`:
+
+	sudo go run main.go
