@@ -59,8 +59,17 @@ func main() {
 	}
 	fmt.Printf("Join: %s\n", resp)
 
-	data := fmt.Sprintf("%x","hello world")
-	resp, err = lora.Send(fmt.Sprintf("1,1,%s", data))
+	// at+send=0,2,010203040506 /*APP port:2, unconfirmed message*/
+	// at+recv=2,0,0
+	resp, err = lora.Send("0,2,010203040506")
+	if err != nil {
+		log.Fatal("failed to send: ", err)
+	}
+	fmt.Printf("Send: %s\n", resp)
+
+	// at+send=1,2,010203040506 /*APP port :2, confirmed message*/
+	// at+recv=1,0,0
+	resp, err = lora.Send("1,2,010203040506")
 	if err != nil {
 		log.Fatal("failed to send: ", err)
 	}
