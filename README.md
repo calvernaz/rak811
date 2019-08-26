@@ -1,7 +1,8 @@
 # rak811
 RAK811 Golang Library for use with LoRa pHAT &amp; MicroBIT Node
 
-[![CircleCI Build Status](https://circleci.com/gh/calvernaz/rak811/rak811.svg?style=shield)](https://circleci.com/gh/calvernaz/rak811)
+[![CircleCI](https://circleci.com/gh/calvernaz/rak811.svg?style=svg)](https://circleci.com/gh/calvernaz/rak811)
+
 # Example
 
 ```
