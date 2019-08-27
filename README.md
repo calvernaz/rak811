@@ -37,4 +37,4 @@ To run the example, use `sudo`:
 
 # Resources
 
-	[Wiki](https://github.com/calvernaz/rak811/wiki/Development)
+[Wiki](https://github.com/calvernaz/rak811/wiki/Development)
