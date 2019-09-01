@@ -34,6 +34,35 @@ func TestCreateCmd(t *testing.T) {
 	}
 }
 
+func Test_WhichError(t *testing.T) {
+	tests := []struct {
+		in  string
+		out int
+	}{
+		{"ERROR-1", CodeArgErr},
+		{"ERROR-2", CodeArgNotFind},
+		{"ERROR-3", CodeJoinAbpErr},
+		{"ERROR-4", CodeJoinOtaaErr},
+		{"ERROR-5", CodeNotJoin},
+		{"ERROR-6", CodeMacBusyErr},
+		{"ERROR-7", CodeTxErr},
+		{"ERROR-8", CodeInterErr},
+		{"ERROR-11", CodeWrCfgErr},
+		{"ERROR-12", CodeRdCfgErr},
+		{"ERROR-13", CodeTxLenLimiteErr},
+		{"ERROR-20", CodeUnknownErr},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			code := WhichError(tt.in).Code()
+			if  code != tt.out {
+				t.Errorf("want %d, got %d", tt.out, code)
+			}
+		})
+	}
+}
+
 func TestLora_Version(t *testing.T) {
 	fsp := newFakeFakeSerialPort([]byte("OK2.0.3.0\r\n"))
 

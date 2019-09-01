@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,21 +14,87 @@ import (
 	"github.com/tarm/serial"
 )
 
-
 const (
+	CodeArgErr         = -1
+	CodeArgNotFind     = -2
+	CodeJoinAbpErr     = -3
+	CodeJoinOtaaErr    = -4
+	CodeNotJoin        = -5
+	CodeMacBusyErr     = -6
+	CodeTxErr          = -7
+	CodeInterErr       = -8
+	CodeWrCfgErr       = -11
+	CodeRdCfgErr       = -12
+	CodeTxLenLimiteErr = -13
+	CodeUnknownErr     = -20
+
 	// JoinSuccess successful join.
 	JoinSuccess = "at+recv=3,0,0"
 	// JoinFail incorrect join config parameters.
 	JoinFail = "at+recv=4,0,0"
 	// JoinTimeout no response from a gateway.
 	JoinTimeout = "at+recv=6,0,0"
-)
 
-
-const (
-	OK = "OK"
+	OK    = "OK"
 	ERROR = "ERROR"
 )
+
+type LoraError struct {
+	code int
+	desc string
+}
+
+func (e *LoraError) Code() int {
+	return e.code
+}
+
+func (e *LoraError) Error() string {
+	return e.desc
+}
+
+func WhichError(error string) *LoraError {
+	if !strings.HasPrefix(error, ERROR) {
+		return nil
+	}
+
+	prefix := strings.TrimPrefix(error, ERROR)
+	code, _ := strconv.Atoi(prefix)
+	switch code {
+	case -1:
+		return whichError(CodeArgErr, "invalid argument")
+	case -2:
+		return whichError(CodeArgNotFind, "argument is not available")
+	case -3:
+		return whichError(CodeJoinAbpErr, "can't join network using ABP")
+	case -4:
+		return whichError(CodeJoinOtaaErr, "can't join network using OTAA")
+	case -5:
+		return whichError(CodeNotJoin, "can't send packet, failed to join network")
+	case -6:
+		return whichError(CodeMacBusyErr, "can't send packet, busy channel")
+	case -7:
+		return whichError(CodeTxErr, "can't send packet, transmission error")
+	case -8:
+		return whichError(CodeInterErr, "")
+	case -11:
+		return whichError(CodeWrCfgErr, "configuration write error")
+	case -12:
+		return whichError(CodeRdCfgErr, "configuration read error")
+	case -13:
+		return whichError(CodeTxLenLimiteErr, "transmission length limit error")
+	case -20:
+	default:
+		return whichError(CodeUnknownErr, "unknown error")
+	}
+	return nil
+}
+
+func whichError(code int, desc string) *LoraError {
+	return &LoraError{
+		code: code,
+		desc: desc,
+	}
+}
 
 type config func(*serial.Config)
 
@@ -167,7 +234,6 @@ func (l *Lora) SetBand(band string) (string, error) {
 	return l.tx(fmt.Sprintf("band=%s", band), readline)
 }
 
-
 // JoinOTAA join the configured network in OTAA mode.
 // The module doesn't accept any other command before it returns a response.
 // Response: JoinSuccess, JoinFail, JoinTimeout
@@ -250,7 +316,6 @@ func (l *Lora) Send(data string) (string, error) {
 		return resp, errors.New(resp)
 	})
 }
-
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
 func (l *Lora) Recv(data string) (string, error) {
