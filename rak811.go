@@ -23,9 +23,6 @@ const (
 	JoinTimeout = "at+recv=6,0,0"
 )
 
-// ErrTimeout is returns when the serial port doesnt return any data
-// within the test ReadTimeout
-var ErrTimeout = errors.New("no response within the set timeout")
 
 const (
 	OK = "OK"
@@ -61,9 +58,8 @@ func New(conf *serial.Config) (*Lora, error) {
 
 func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) {
 	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		return "", fmt.Errorf("failed to write command %q with: %s", cmd, err)
+		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-
 	return fn(l)
 }
 
@@ -100,7 +96,7 @@ func (l *Lora) HardReset() (string, error) {
 	time.Sleep(10 * time.Millisecond)
 	pin.Set()
 	time.Sleep(2000 * time.Millisecond)
-	pin.Close()
+	err = pin.Close()
 
 	scanner := bufio.NewScanner(bufio.NewReader(l.port))
 	var resp string
@@ -109,7 +105,7 @@ func (l *Lora) HardReset() (string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("failed reading response: %s", err)
+		return "", fmt.Errorf("failed reading response: %v", err)
 	}
 
 	return resp, nil
@@ -143,7 +139,7 @@ func (l *Lora) SetRecvEx(mode int) (string, error) {
 // Close the serial port.
 func (l *Lora) Close() {
 	if err := l.port.Close(); err != nil {
-		fmt.Printf("failed closing port, %v", err)
+		fmt.Printf("failed closing port: %v", err)
 	}
 }
 

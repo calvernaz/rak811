@@ -1,6 +1,7 @@
 GOFILES = $(shell find . -name '*.go')
+GO_ENV=GOOS=`go env GOOS` GOARCH=`go env GOARCH` CGO_ENABLED=0
 
 default: test
 
 test: $(GOFILES)
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test ./...
+	${GO_ENV} go test ./...
