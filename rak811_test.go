@@ -2,6 +2,7 @@ package rak811
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -55,7 +56,9 @@ func Test_WhichError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			code := WhichError(tt.in).Code()
+			err := WhichError(tt.in)
+			fmt.Println(err)
+			code := err.Code()
 			if  code != tt.out {
 				t.Errorf("want %d, got %d", tt.out, code)
 			}

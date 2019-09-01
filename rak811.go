@@ -83,7 +83,6 @@ func WhichError(error string) *LoraError {
 	case -13:
 		return whichError(CodeTxLenLimiteErr, "transmission length limit error")
 	case -20:
-	default:
 		return whichError(CodeUnknownErr, "unknown error")
 	}
 	return nil
