@@ -1,7 +1,11 @@
-GOFILES = $(shell find . -name '*.go')
-GO_ENV=GOOS=`go env GOOS` GOARCH=`go env GOARCH` CGO_ENABLED=0
+TEST=go mod download; CGO_ENABLED=0 GOOS=linux go test -v ./...
+
+ARCH ?= amd64
 
 default: test
 
-test: $(GOFILES)
-	${GO_ENV} go test ./...
+test:
+	@sed \
+	    -e 's|COMMAND|$(TEST)|g' \
+	    Dockerfile > .dockerfile-$(ARCH)
+	@docker build -f .dockerfile-$(ARCH) .
