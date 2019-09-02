@@ -50,7 +50,7 @@ func Test_WhichError(t *testing.T) {
 		{"ERROR-8", CodeInterErr},
 		{"ERROR-11", CodeWrCfgErr},
 		{"ERROR-12", CodeRdCfgErr},
-		{"ERROR-13", CodeTxLenLimiteErr},
+		{"ERROR-13", CodeTxLenLimitErr},
 		{"ERROR-20", CodeUnknownErr},
 	}
 
@@ -59,6 +59,34 @@ func Test_WhichError(t *testing.T) {
 			err := WhichError(tt.in)
 			fmt.Println(err)
 			code := err.Code()
+			if  code != tt.out {
+				t.Errorf("want %d, got %d", tt.out, code)
+			}
+		})
+	}
+}
+
+func TestWhichEventResponse(t *testing.T) {
+	tests := []struct {
+		in  string
+		out int
+	}{
+		{"at+recv=0,0,0", StatusRecvData},
+		{"at+recv=1,0,0", StatusTxConfirmed},
+		{"at+recv=2,0,0", StatusTxUnconfirmed},
+		{"at+recv=3,0,0", StatusJoinedSuccess},
+		{"at+recv=4,0,0", StatusJoinedFailed},
+		{"at+recv=5,0,0", StatusTxTimeout},
+		{"at+recv=6,0,0", StatusRx2Timeout},
+		{"at+recv=7,0,0", StatusDownlinkRepeated},
+		{"at+recv=8,0,0", StatusWakeUp},
+		{"at+recv=9,0,0", StatusP2pComplete},
+		{"at+recv=100,0,0", StatusUnknown},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			code := WhichEventResponse(tt.in).Code()
 			if  code != tt.out {
 				t.Errorf("want %d, got %d", tt.out, code)
 			}

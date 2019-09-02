@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
@@ -15,18 +14,35 @@ import (
 )
 
 const (
-	CodeArgErr         = -1
-	CodeArgNotFind     = -2
-	CodeJoinAbpErr     = -3
-	CodeJoinOtaaErr    = -4
-	CodeNotJoin        = -5
-	CodeMacBusyErr     = -6
-	CodeTxErr          = -7
-	CodeInterErr       = -8
-	CodeWrCfgErr       = -11
-	CodeRdCfgErr       = -12
-	CodeTxLenLimiteErr = -13
-	CodeUnknownErr     = -20
+	// error codes
+	CodeArgErr        = -1
+	CodeArgNotFind    = -2
+	CodeJoinAbpErr    = -3
+	CodeJoinOtaaErr   = -4
+	CodeNotJoin       = -5
+	CodeMacBusyErr    = -6
+	CodeTxErr         = -7
+	CodeInterErr      = -8
+	CodeWrCfgErr      = -11
+	CodeRdCfgErr      = -12
+	CodeTxLenLimitErr = -13
+	CodeUnknownErr    = -20
+
+	// event responses
+	StatusRecvData         = 0
+	StatusTxConfirmed      = 1
+	StatusTxUnconfirmed    = 2
+	StatusJoinedSuccess    = 3
+	StatusJoinedFailed     = 4
+	StatusTxTimeout        = 5
+	StatusRx2Timeout       = 6
+	StatusDownlinkRepeated = 7
+	StatusWakeUp           = 8
+	StatusP2pComplete      = 9
+	StatusUnknown          = 100
+
+	// event response prefix
+	eventRespPrefix = "at+recv="
 
 	// JoinSuccess successful join.
 	JoinSuccess = "at+recv=3,0,0"
@@ -39,6 +55,7 @@ const (
 	ERROR = "ERROR"
 )
 
+// LoraError type that describes the LoRaWAN errors
 type LoraError struct {
 	code int
 	desc string
@@ -57,42 +74,81 @@ func WhichError(error string) *LoraError {
 		return nil
 	}
 
-	prefix := strings.TrimPrefix(error, ERROR)
-	code, _ := strconv.Atoi(prefix)
-	switch code {
-	case -1:
+	errCode := strings.TrimPrefix(error, ERROR)
+	switch errCode {
+	case "-1":
 		return whichError(CodeArgErr, "invalid argument")
-	case -2:
+	case "-2":
 		return whichError(CodeArgNotFind, "argument is not available")
-	case -3:
+	case "-3":
 		return whichError(CodeJoinAbpErr, "can't join network using ABP")
-	case -4:
+	case "-4":
 		return whichError(CodeJoinOtaaErr, "can't join network using OTAA")
-	case -5:
+	case "-5":
 		return whichError(CodeNotJoin, "can't send packet, failed to join network")
-	case -6:
+	case "-6":
 		return whichError(CodeMacBusyErr, "can't send packet, busy channel")
-	case -7:
+	case "-7":
 		return whichError(CodeTxErr, "can't send packet, transmission error")
-	case -8:
+	case "-8":
 		return whichError(CodeInterErr, "")
-	case -11:
+	case "-11":
 		return whichError(CodeWrCfgErr, "configuration write error")
-	case -12:
+	case "-12":
 		return whichError(CodeRdCfgErr, "configuration read error")
-	case -13:
-		return whichError(CodeTxLenLimiteErr, "transmission length limit error")
-	case -20:
+	case "-13":
+		return whichError(CodeTxLenLimitErr, "transmission length limit error")
+	case "-20":
 		return whichError(CodeUnknownErr, "unknown error")
 	}
 	return nil
 }
 
-func whichError(code int, desc string) *LoraError {
-	return &LoraError{
-		code: code,
-		desc: desc,
+type EventResponse struct {
+	code int
+	desc string
+}
+
+func (e *EventResponse) Code() int {
+	return e.code
+}
+
+func (e *EventResponse) Description() string {
+	return e.desc
+}
+
+func WhichEventResponse(resp string) *EventResponse {
+	if !strings.HasPrefix(resp, "at+recv=") {
+		return nil
 	}
+
+	evt := strings.TrimPrefix(resp, eventRespPrefix)
+	status := strings.Split(evt, ",")[0]
+	switch status {
+	case "0":
+		return whichEventResponse(StatusRecvData, "received data from server or P2P")
+	case "1":
+		return whichEventResponse(StatusTxConfirmed, "transmission succeeded and received ACK from server")
+	case "2":
+		return whichEventResponse(StatusTxUnconfirmed, "transmission succeeded")
+	case "3":
+		return whichEventResponse(StatusJoinedSuccess, "join network procedure was successful")
+	case "4":
+		return whichEventResponse(StatusJoinedFailed, "join network procedure failed")
+	case "5":
+		return whichEventResponse(StatusTxTimeout, "transmission timeout")
+	case "6":
+		return whichEventResponse(StatusRx2Timeout, "join network procedure timeout, no response from the gateway")
+	case "7":
+		return whichEventResponse(StatusDownlinkRepeated, "downlink repeated")
+	case "8":
+		return whichEventResponse(StatusWakeUp, "module is awake")
+	case "9":
+		return whichEventResponse(StatusP2pComplete, "lora P2P continues transmission has completed")
+	case "100":
+		return whichEventResponse(StatusUnknown, "unknown status")
+	}
+	return nil
 }
 
 type config func(*serial.Config)
@@ -436,3 +492,19 @@ func isError(msg string) error {
 	}
 	return nil
 }
+
+func whichError(code int, desc string) *LoraError {
+	return &LoraError{
+		code: code,
+		desc: desc,
+	}
+}
+
+func whichEventResponse(statusCode int, desc string) *EventResponse {
+	return &EventResponse{
+		statusCode,
+		desc,
+	}
+}
+
+
