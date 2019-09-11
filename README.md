@@ -39,4 +39,5 @@ You can find a more complete example and usage in resources.
 # Resources
 
 [Wiki](https://github.com/calvernaz/rak811/wiki/Development)
-[Usage Example](https://github.com/calvernaz/lorawan-rpi-temp)
+
+[Usage example](https://github.com/calvernaz/lorawan-rpi-temp)
