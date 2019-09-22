@@ -61,10 +61,12 @@ type LoraError struct {
 	desc string
 }
 
+// Code returns the error code
 func (e *LoraError) Code() int {
 	return e.code
 }
 
+// Error returns the error description
 func (e *LoraError) Error() string {
 	return e.desc
 }
