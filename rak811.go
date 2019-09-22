@@ -69,6 +69,7 @@ func (e *LoraError) Error() string {
 	return e.desc
 }
 
+// WhichError translates an error string to a LoraError
 func WhichError(error string) *LoraError {
 	if !strings.HasPrefix(error, ERROR) {
 		return nil
@@ -506,5 +507,3 @@ func whichEventResponse(statusCode int, desc string) *EventResponse {
 		desc,
 	}
 }
-
-
