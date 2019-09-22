@@ -40,4 +40,4 @@ You can find a more complete example and usage in resources.
 
 [Wiki](https://github.com/calvernaz/rak811/wiki/Development)
 
-[RPi project usage example](https://github.com/calvernaz/lorawan-rpi-temp)
+[RPi project example](https://github.com/calvernaz/lorawan-rpi-temp)
