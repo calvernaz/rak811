@@ -1,7 +1,7 @@
 # rak811
 RAK811 Golang Library for use with LoRa pHAT &amp; MicroBIT Node
 
-[![Github Build](https://github.com/calvernaz/rak811/workflows/build/badge.svg)]
+[![Github Build](https://github.com/calvernaz/rak811/workflows/Build/badge.svg)]
 
 # Example
 
