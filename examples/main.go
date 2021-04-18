@@ -8,9 +8,7 @@ import (
 )
 
 func main() {
-	cfg := &rak811.Config{
-		Name:        "/dev/ttyAMA0",
-	}
+	cfg := &rak811.Config{}
 
 	lora, err := rak811.New(cfg)
 	if err != nil {

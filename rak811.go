@@ -192,7 +192,7 @@ type Lora struct {
 
 func New(conf *Config) (*Lora, error) {
 	defaultConfig := &Config{
-		Name:     "/dev/serial0",
+		Name:     "/dev/ttyAMA0",
 		Baud:     115200,
 		Parity:   ParityNone,
 		StopBits: Stop1,
