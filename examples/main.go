@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/tarm/serial"
 	"log"
 
 	"github.com/calvernaz/rak811"
 )
 
 func main() {
-	cfg := &serial.Config{
+	cfg := &rak811.Config{
 		Name:        "/dev/ttyAMA0",
 	}
 

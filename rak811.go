@@ -2,19 +2,23 @@ package rak811
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/davecheney/gpio"
-	"github.com/davecheney/gpio/rpi"
-	"github.com/tarm/serial"
+	"periph.io/x/conn/v3"
+	"periph.io/x/conn/v3/gpio"
+	"periph.io/x/conn/v3/gpio/gpioreg"
+	"periph.io/x/conn/v3/physic"
+	"periph.io/x/conn/v3/uart"
+	"periph.io/x/conn/v3/uart/uartreg"
+	"periph.io/x/host/v3"
 )
 
 const (
-	// error codes
 	CodeArgErr        = -1
 	CodeArgNotFind    = -2
 	CodeJoinAbpErr    = -3
@@ -28,7 +32,6 @@ const (
 	CodeTxLenLimitErr = -13
 	CodeUnknownErr    = -20
 
-	// event responses
 	StatusRecvData         = 0
 	StatusTxConfirmed      = 1
 	StatusTxUnconfirmed    = 2
@@ -77,6 +80,7 @@ func WhichError(error string) *LoraError {
 		return nil
 	}
 
+	// TODO: turn error strings into constants
 	errCode := strings.TrimPrefix(error, ERROR)
 	switch errCode {
 	case "-1":
@@ -154,38 +158,97 @@ func WhichEventResponse(resp string) *EventResponse {
 	return nil
 }
 
-type config func(*serial.Config)
+type StopBits int8
+type Parity byte
 
-type Lora struct {
-	port io.ReadWriteCloser
+const (
+	Stop1     StopBits = 1
+	Stop1Half StopBits = 15
+	Stop2     StopBits = 2
+)
+
+const (
+	ParityNone  Parity = 'N'
+	ParityOdd   Parity = 'O'
+	ParityEven  Parity = 'E'
+	ParityMark  Parity = 'M' // parity bit is always 1
+	ParitySpace Parity = 'S' // parity bit is always 0
+)
+
+
+type extraConfig struct {
+	debug bool
 }
 
-func New(conf *serial.Config) (*Lora, error) {
-	defaultConfig := &serial.Config{
+type Config struct {
+	Name        string
+	Baud        int64
+	Parity      Parity
+	StopBits    StopBits
+	Size        int
+}
+
+type config func(*Config)
+
+type Lora struct {
+	conn   conn.Conn
+	config *extraConfig
+	port   uart.PortCloser
+}
+
+func New(conf *Config) (*Lora, error) {
+	defaultConfig := &Config{
 		Name:        "/dev/serial0",
 		Baud:        115200,
-		ReadTimeout: 1500 * time.Millisecond, // turns on the non-blocking mode
-		Parity:      serial.ParityNone,
-		StopBits:    serial.Stop1,
+		Parity:      ParityNone,
+		StopBits:    Stop1,
 		Size:        8,
 	}
 
 	newConfig(conf)(defaultConfig)
-	port, err := serial.OpenPort(defaultConfig)
+
+	// Load all the drivers:
+	_, err := host.Init()
+	if err != nil {
+		return nil, err
+	}
+
+	p, err := uartreg.Open(conf.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := p.Connect(
+		physic.Frequency(defaultConfig.Baud),
+		uart.Stop(defaultConfig.StopBits),
+		uart.Parity(defaultConfig.Parity),
+		uart.RTSCTS,
+		defaultConfig.Size,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Lora{
-		port: port,
+		port:   p,
+		conn:   c,
+		config: nil,
 	}, nil
 }
 
-func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) {
-	if _, err := l.port.Write(createCmd(cmd)); err != nil {
+func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
+	_, err := l.conn.(io.Writer).Write(createCmd(cmd))
+	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	return fn(l)
+
+	buf := bytes.Buffer{}
+	_, err = buf.ReadFrom(l.conn.(io.Reader))
+	if err != nil {
+		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+	}
+
+	return fn(buf.Bytes())
 }
 
 //
@@ -202,6 +265,11 @@ func (l *Lora) Sleep() (string, error) {
 	return l.tx("sleep", readline)
 }
 
+// Debug set debug mode on or off
+func (l *Lora) Debug(mode bool) {
+	l.config.debug = mode
+}
+
 // Reset module or LoRaWAN stack
 // 0: reset and restart module
 // 1: reset LoRaWAN stack and the module will reload
@@ -212,28 +280,24 @@ func (l *Lora) Reset(mode int) (string, error) {
 
 // HardReset the module by reseting the hat pins.
 func (l *Lora) HardReset() (string, error) {
-	pin, err := rpi.OpenPin(rpi.GPIO17, gpio.ModeOutput)
-	if err != nil {
-		return "", fmt.Errorf("error opening pin err: %v", err)
-	}
+	pin := gpioreg.ByName("GPIO17")
 
-	pin.Clear()
+	if err := pin.Out(gpio.Low); err != nil {
+		return "", err
+	}
 	time.Sleep(10 * time.Millisecond)
-	pin.Set()
-	time.Sleep(2000 * time.Millisecond)
-	err = pin.Close()
 
-	scanner := bufio.NewScanner(bufio.NewReader(l.port))
-	var resp string
-	for scanner.Scan() {
-		resp += scanner.Text()
+	if err := pin.Out(gpio.High); err != nil {
+		return "", err
 	}
+	time.Sleep(2000 * time.Millisecond)
 
-	if err := scanner.Err(); err != nil {
+	buf := bytes.Buffer{}
+	_, err := buf.ReadFrom(l.conn.(io.Reader))
+	if err != nil {
 		return "", fmt.Errorf("failed reading response: %v", err)
 	}
-
-	return resp, nil
+	return buf.String(), nil
 }
 
 // Reload set LoRaWAN and LoraP2P configurations to default
@@ -261,10 +325,10 @@ func (l *Lora) SetRecvEx(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("recv_ex=%d", mode), readline)
 }
 
-// Close the serial port.
+// Close the serial conn.
 func (l *Lora) Close() {
 	if err := l.port.Close(); err != nil {
-		fmt.Printf("failed closing port: %v", err)
+		fmt.Printf("failed closing conn: %v", err)
 	}
 }
 
@@ -296,28 +360,31 @@ func (l *Lora) SetBand(band string) (string, error) {
 // The module doesn't accept any other command before it returns a response.
 // Response: JoinSuccess, JoinFail, JoinTimeout
 func (l *Lora) JoinOTAA() (string, error) {
-	return l.tx("join=otaa", func(l *Lora) (string, error) {
-		resp, err := readline(l)
+	return l.tx("join=otaa", func(b []byte) (string, error) {
+		scanner := bufio.NewScanner(bytes.NewReader(b))
+		scanner.Split(bufio.ScanLines)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch line {
+			case OK:
+				continue
+			case JoinSuccess:
+				return JoinSuccess, nil
+			case JoinFail:
+				return JoinFail, nil
+			case JoinTimeout:
+				return JoinTimeout, nil
+			default:
+				return line, fmt.Errorf("invalid join response line: %v", line)
+			}
+		}
+
+		err := scanner.Err()
 		if err != nil {
 			return "", err
 		}
-
-		if strings.HasPrefix(resp, OK) {
-			resp, err := readline(l)
-			if err == nil && resp != "" {
-				switch resp {
-				case JoinSuccess:
-					return JoinSuccess, nil
-				case JoinFail:
-					return JoinFail, nil
-				case JoinTimeout:
-					return JoinTimeout, nil
-				default:
-					return "", fmt.Errorf("invalid join response resp: %v", resp)
-				}
-			}
-		}
-		return resp, err
+		return "", nil
 	})
 }
 
@@ -358,20 +425,25 @@ func (l *Lora) GetABPInfo() (string, error) {
 
 // Send sends data to LoRaWAN network, returns the event response
 func (l *Lora) Send(data string) (string, error) {
-	return l.tx(fmt.Sprintf("send=%s", data), func(l *Lora) (string, error) {
-		resp, err := readline(l)
+	return l.tx(fmt.Sprintf("send=%s", data), func(b []byte) (string, error) {
+		scanner := bufio.NewScanner(bytes.NewReader(b))
+		scanner.Split(bufio.ScanLines)
+
+		for scanner.Scan() {
+			line := scanner.Text()
+			switch {
+			case line == OK:
+				continue
+			case line != "":
+				return line, nil
+			}
+		}
+
+		err := scanner.Err()
 		if err != nil {
 			return "", err
 		}
-
-		if strings.HasPrefix(resp, OK) {
-			resp, err := readline(l)
-			if err != nil {
-				return "", err
-			}
-			return resp, nil
-		}
-		return resp, errors.New(resp)
+		return "", nil
 	})
 }
 
@@ -405,7 +477,7 @@ func (l *Lora) TxStop() (string, error) {
 	return l.tx("tx_stop", readline)
 }
 
-// Stop LoraP2P RX
+// RxStop LoraP2P RX
 func (l *Lora) RxStop() (string, error) {
 	return l.tx("rx_stop", readline)
 }
@@ -443,41 +515,36 @@ func (l *Lora) SetUART(configuration string) (string, error) {
 	return l.tx(fmt.Sprintf("uart=%s", configuration), readline)
 }
 
-func readline(l *Lora) (string, error) {
-	reader := bufio.NewReader(l.port)
-	for {
-		resp, err := reader.ReadString('\n')
-		if err != nil {
-			// serial timeout has triggered
-			if err == io.EOF {
+func readline(b []byte) (string, error) {
+	scanner := bufio.NewScanner(bytes.NewReader(b))
+	scanner.Split(bufio.ScanLines)
 
-				if isOk(resp) {
-					return resp, nil
-				}
-
-				if err := isError(resp); err != nil {
-					return "", err
-				}
-				continue // proceed until the global timeout operation kicks in
-			}
-			return "", fmt.Errorf("failed read: %v", err)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if isOk(line) {
+			return line, nil
 		}
 
-		resp = strings.TrimSuffix(strings.TrimSpace(resp), "\r")
-		return resp, nil
+		if err := isError(line); err != nil {
+			return "", err
+		}
+		continue
 	}
+
+	err := scanner.Err()
+	if err != nil {
+		return "", err
+	}
+	return "", nil
 }
 
-func newConfig(config *serial.Config) config {
-	return func(defaultConfig *serial.Config) {
+func newConfig(config *Config) config {
+	return func(defaultConfig *Config) {
 		if config.Baud > 0 {
 			defaultConfig.Baud = config.Baud
 		}
 		if config.Name != "" {
 			defaultConfig.Name = config.Name
-		}
-		if config.ReadTimeout > 0 {
-			defaultConfig.ReadTimeout = config.ReadTimeout
 		}
 	}
 }

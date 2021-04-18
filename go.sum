@@ -1,6 +1,8 @@
-github.com/davecheney/gpio v0.0.0-20160912024957-a6de66e7e470 h1:pw35WQPA7J4mJlRHfDlNdD5o3ykHpWGuwyLnT6kv1fU=
-github.com/davecheney/gpio v0.0.0-20160912024957-a6de66e7e470/go.mod h1:43PwoPhLiAtAufKfF2PL7uav7KfyIXgGKqlcXPpvMAo=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
 golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e h1:D5TXcfTk7xF7hvieo4QErS3qqCB4teTffacDWr7CI+0=
 golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+periph.io/x/conn/v3 v3.6.7 h1:hem/gzoUI0tnvdJOJAk+XLBhqBGX9sHkwShBXRGGy0k=
+periph.io/x/conn/v3 v3.6.7/go.mod h1:3OD27w9YVa5DS97VsUxsPGzD9Qrm5Ny7cF5b6xMMIWg=
+periph.io/x/host/v3 v3.6.7 h1:hUVkGKJ235XocQIRiITxSmP8TT8f27oiN7R2dJkomIE=
+periph.io/x/host/v3 v3.6.7/go.mod h1:wO+N7Q6qU1Pp9EXBfyV9t7kPAlvZxYoJl4ptK62qhSY=
