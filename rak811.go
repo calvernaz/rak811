@@ -212,7 +212,7 @@ func New(conf *Config) (*Lora, error) {
 		return nil, err
 	}
 
-	fmt.Printf("open %v port\n", conf.Name)
+	fmt.Printf("open %v port\n", defaultConfig.Name)
 	p, err := uartreg.Open(defaultConfig.Name)
 	if err != nil {
 		return nil, err
