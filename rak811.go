@@ -9,13 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"periph.io/x/conn/v3"
+	"go.bug.st/serial"
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
-	"periph.io/x/conn/v3/physic"
-	"periph.io/x/conn/v3/uart"
-	"periph.io/x/conn/v3/uart/uartreg"
-	"periph.io/x/host/v3"
 )
 
 const (
@@ -191,9 +187,8 @@ type Config struct {
 type config func(*Config)
 
 type Lora struct {
-	conn   conn.Conn
+	port   serial.Port
 	config *extraConfig
-	port   uart.PortCloser
 }
 
 func New(conf *Config) (*Lora, error) {
@@ -207,43 +202,31 @@ func New(conf *Config) (*Lora, error) {
 
 	newConfig(conf)(defaultConfig)
 
-	// Load all the drivers:
-	_, err := host.Init()
+	mode := &serial.Mode{
+		BaudRate: int(defaultConfig.Baud),
+		DataBits: defaultConfig.Size,
+		Parity:   serial.Parity(defaultConfig.Parity),
+		StopBits: serial.StopBits(defaultConfig.StopBits),
+	}
+
+	p, err := serial.Open(defaultConfig.Name, mode)
 	if err != nil {
 		return nil, err
 	}
-
-	p, err := uartreg.Open(conf.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := p.Connect(
-		physic.Frequency(defaultConfig.Baud),
-		uart.Stop(defaultConfig.StopBits),
-		uart.Parity(defaultConfig.Parity),
-		uart.RTSCTS,
-		defaultConfig.Size,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Lora{
 		port:   p,
-		conn:   c,
 		config: nil,
 	}, nil
 }
 
 func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
-	_, err := l.conn.(io.Writer).Write(createCmd(cmd))
+	_, err := l.port.(io.Writer).Write(createCmd(cmd))
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
 
 	buf := bytes.Buffer{}
-	_, err = buf.ReadFrom(l.conn.(io.Reader))
+	_, err = buf.ReadFrom(l.port.(io.Reader))
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
@@ -293,7 +276,7 @@ func (l *Lora) HardReset() (string, error) {
 	time.Sleep(2000 * time.Millisecond)
 
 	buf := bytes.Buffer{}
-	_, err := buf.ReadFrom(l.conn.(io.Reader))
+	_, err := buf.ReadFrom(l.port.(io.Reader))
 	if err != nil {
 		return "", fmt.Errorf("failed reading response: %v", err)
 	}
@@ -325,10 +308,10 @@ func (l *Lora) SetRecvEx(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("recv_ex=%d", mode), readline)
 }
 
-// Close the serial conn.
+// Close the serial port.
 func (l *Lora) Close() {
 	if err := l.port.Close(); err != nil {
-		fmt.Printf("failed closing conn: %v", err)
+		fmt.Printf("failed closing port: %v", err)
 	}
 }
 
