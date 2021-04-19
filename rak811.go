@@ -16,6 +16,7 @@ import (
 	"periph.io/x/conn/v3/uart"
 	"periph.io/x/conn/v3/uart/uartreg"
 	"periph.io/x/host/v3"
+	_ "periph.io/x/host/v3/serial"
 )
 
 const (
