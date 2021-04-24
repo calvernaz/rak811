@@ -257,7 +257,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 
 func debug(l *Lora, format string, a ...interface{}) {
 	if l.config.debug {
-		fmt.Println(format, a)
+		fmt.Println(strings.TrimSuffix(format, "\r\n"), a)
 	}
 }
 
