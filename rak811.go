@@ -245,7 +245,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, "tx: write:", string(cmd))
+	debug(l, "tx: write:", cmd)
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
