@@ -3,11 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/calvernaz/rak811"
-	"periph.io/x/conn/v3/uart"
-	"periph.io/x/conn/v3/uart/uartreg"
 )
 
 func main() {
@@ -18,37 +15,7 @@ func main() {
 		log.Fatal("failed to create rak811 instance: ", err)
 	}
 
-	fmt.Print("UART ports available:\n")
-	for _, ref := range uartreg.All() {
-		fmt.Printf("- %s\n", ref.Name)
-		if ref.Number != -1 {
-			fmt.Printf("  %d\n", ref.Number)
-		}
-		if len(ref.Aliases) != 0 {
-			fmt.Printf("  %s\n", strings.Join(ref.Aliases, " "))
-		}
-
-		b, err := ref.Open()
-		if err != nil {
-			fmt.Printf("  Failed to open: %v", err)
-		}
-		if p, ok := b.(uart.Pins); ok {
-			fmt.Printf("  RX : %s", p.RX())
-			fmt.Printf("  TX : %s", p.TX())
-			fmt.Printf("  RTS: %s", p.RTS())
-			fmt.Printf("  CTS: %s", p.CTS())
-		}
-		if err := b.Close(); err != nil {
-			fmt.Printf("  Failed to close: %v", err)
-		}
-	}
-
-	resp, err := lora.HardReset()
-	if err != nil {
-		log.Fatal("failed to reset: ", err)
-	}
-
-	resp, err = lora.Version()
+	resp, err := lora.Version()
 	if err != nil {
 		log.Fatal("failed to get version: ", err)
 	}
