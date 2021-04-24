@@ -217,9 +217,8 @@ func New(conf *Config) (*Lora, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open: %q", err)
 	}
-
 	c, err := p.Connect(
-		physic.Frequency(defaultConfig.Baud)*physic.KiloHertz,
+		physic.Frequency(defaultConfig.Baud)*physic.Hertz,
 		uart.Stop(defaultConfig.StopBits),
 		uart.Parity(defaultConfig.Parity),
 		uart.NoFlow,
@@ -237,18 +236,26 @@ func New(conf *Config) (*Lora, error) {
 }
 
 func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
-	_, err := l.conn.(io.Writer).Write(createCmd(cmd))
+	n, err := l.conn.(io.Writer).Write(createCmd(cmd))
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
+	debug(l, "tx: write: %d", n)
 
 	buf := bytes.Buffer{}
-	_, err = buf.ReadFrom(l.conn.(io.Reader))
+	r, err := buf.ReadFrom(l.conn.(io.Reader))
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
+	debug(l, "tx: read: %d", r)
 
 	return fn(buf.Bytes())
+}
+
+func debug(l *Lora, format string, a ...interface{}) {
+	if l.config.debug {
+		fmt.Printf(format, a)
+	}
 }
 
 //
