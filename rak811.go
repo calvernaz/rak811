@@ -243,14 +243,14 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, "tx: %v write: %d", n, string(cmd))
+	debug(l, "tx: write: %d", string(cmd))
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
-	debug(l, "tx: read: %d %v", r, buf.Bytes())
+	debug(l, "tx: %d read: %v", r, buf.Bytes())
 
 	return fn(buf.Bytes())
 }
