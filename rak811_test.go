@@ -98,10 +98,11 @@ func TestWhichEventResponse(t *testing.T) {
 }
 
 func TestLora_Version(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK2.0.3.0\r\n"))
+	fsp := newFakeSerialConn([]byte("OK2.0.3.0\r\n"))
 
-	lora := &Lora{
-		conn: fsp,
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate lora")
 	}
 
 	t.Run("get software version", func(t *testing.T) {
@@ -116,9 +117,10 @@ func TestLora_Version(t *testing.T) {
 }
 
 func TestLora_Sleep(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("module enter sleep", func(t *testing.T) {
@@ -133,9 +135,10 @@ func TestLora_Sleep(t *testing.T) {
 }
 
 func TestLora_Reset(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("reset module", func(t *testing.T) {
@@ -150,10 +153,10 @@ func TestLora_Reset(t *testing.T) {
 }
 
 func TestLora_Reload(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("reload the default parameters", func(t *testing.T) {
@@ -168,10 +171,10 @@ func TestLora_Reload(t *testing.T) {
 }
 
 func TestLora_SetMode(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("set module work on", func(t *testing.T) {
@@ -186,10 +189,10 @@ func TestLora_SetMode(t *testing.T) {
 }
 
 func TestLora_SetRecvEx(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("set enable or disable rssi and snr messages", func(t *testing.T) {
@@ -204,10 +207,10 @@ func TestLora_SetRecvEx(t *testing.T) {
 }
 
 func TestLora_SetConfig(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("set enable or disable rssi and snr messages", func(t *testing.T) {
@@ -222,10 +225,10 @@ func TestLora_SetConfig(t *testing.T) {
 }
 
 func TestLora_GetConfig(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("get lora configuration", func(t *testing.T) {
@@ -240,10 +243,10 @@ func TestLora_GetConfig(t *testing.T) {
 }
 
 func TestLora_GetBand(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OKEU868\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OKEU868\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("get lora region", func(t *testing.T) {
@@ -258,10 +261,10 @@ func TestLora_GetBand(t *testing.T) {
 }
 
 func TestLora_JoinOTAA(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK+"\r\n"), []byte(JoinSuccess+"\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK+"\r\n"), []byte(JoinSuccess+"\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("over the air activation", func(t *testing.T) {
@@ -277,10 +280,10 @@ func TestLora_JoinOTAA(t *testing.T) {
 }
 
 func TestLora_JoinOTAA_Failed(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK+"\r\n"), []byte(JoinFail+"\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK+"\r\n"), []byte(JoinFail+"\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("failed over the air activation", func(t *testing.T) {
@@ -296,10 +299,10 @@ func TestLora_JoinOTAA_Failed(t *testing.T) {
 }
 
 func TestLora_JoinOTAA_Cant_Join(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("ERROR-4\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("ERROR-4\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("failed over the air activation", func(t *testing.T) {
@@ -314,10 +317,10 @@ func TestLora_JoinOTAA_Cant_Join(t *testing.T) {
 }
 
 func TestLora_Signal(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK10 11\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK10 11\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("signal from Lora gateway", func(t *testing.T) {
@@ -332,10 +335,10 @@ func TestLora_Signal(t *testing.T) {
 }
 
 func TestLora_GetDataRate(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("change next data rate", func(t *testing.T) {
@@ -350,10 +353,10 @@ func TestLora_GetDataRate(t *testing.T) {
 }
 
 func TestLora_GetLinkCnt(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK1,2\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK1,2\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("get lora link info", func(t *testing.T) {
@@ -368,10 +371,10 @@ func TestLora_GetLinkCnt(t *testing.T) {
 }
 
 func TestLora_GetABPInfo(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK1,2,64,32\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK1,2,64,32\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("abp info query", func(t *testing.T) {
@@ -386,10 +389,10 @@ func TestLora_GetABPInfo(t *testing.T) {
 }
 
 func TestLora_Send(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK+"\r\n"), []byte("at+recv=2,0,0\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK+"\r\n"), []byte("at+recv=2,0,0\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("send packet string", func(t *testing.T) {
@@ -404,10 +407,10 @@ func TestLora_Send(t *testing.T) {
 }
 
 func TestLora_Recv(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK1,2\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK1,2\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("receive the module data", func(t *testing.T) {
@@ -422,10 +425,10 @@ func TestLora_Recv(t *testing.T) {
 }
 
 func TestLora_GetRfConfig(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK868100000,12,0,1,8,20\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK868100000,12,0,1,8,20\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("get lorap2p configuration", func(t *testing.T) {
@@ -440,9 +443,10 @@ func TestLora_GetRfConfig(t *testing.T) {
 }
 
 func TestLora_Txc(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte(OK))
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte(OK))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("set lorap2p tx continues", func(t *testing.T) {
@@ -457,10 +461,10 @@ func TestLora_Txc(t *testing.T) {
 }
 
 func TestLora_GetRadioStatus(t *testing.T) {
-	fsp := newFakeFakeSerialPort([]byte("OK1,2,3,4,5,6,7\r\n"))
-
-	lora := &Lora{
-		conn: fsp,
+	fsp := newFakeSerialConn([]byte("OK1,2,3,4,5,6,7\r\n"))
+	lora, err := newLora(nil, fsp)
+	if err != nil {
+		t.Error("failed to instantiate Lora")
 	}
 
 	t.Run("get the radio statistics", func(t *testing.T) {
@@ -485,30 +489,30 @@ func TestLora_Debug(t *testing.T) {
 	}
 }
 
-func newFakeFakeSerialPort(data ...[]byte) *FakeSerialPort {
-	return &FakeSerialPort{
+func newFakeSerialConn(data ...[]byte) *FakeSerialConn {
+	return &FakeSerialConn{
 		responses: data,
 	}
 }
 
-type FakeSerialPort struct {
+type FakeSerialConn struct {
 	responses [][]byte // Each element is returns as a separate response.
 	current   []byte
 }
 
-func (f *FakeSerialPort) String() string {
+func (f *FakeSerialConn) String() string {
 	return "fake"
 }
 
-func (f *FakeSerialPort) Tx(w, r []byte) error {
+func (f *FakeSerialConn) Tx(w, r []byte) error {
 	return errors.New("not implemented")
 }
 
-func (f *FakeSerialPort) Duplex() conn.Duplex {
+func (f *FakeSerialConn) Duplex() conn.Duplex {
 	return conn.Full
 }
 
-func (f *FakeSerialPort) Read(p []byte) (n int, err error) {
+func (f *FakeSerialConn) Read(p []byte) (n int, err error) {
 	if len(f.responses) == 0 {
 		return 0, io.EOF
 	}
@@ -519,14 +523,14 @@ func (f *FakeSerialPort) Read(p []byte) (n int, err error) {
 	return len(f.current), nil
 }
 
-func (f *FakeSerialPort) Write(p []byte) (n int, err error) {
+func (f *FakeSerialConn) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func (*FakeSerialPort) Close() error {
+func (*FakeSerialConn) Close() error {
 	return nil
 }
 
-func (f FakeSerialPort) At() []byte {
+func (f FakeSerialConn) At() []byte {
 	return []byte(strings.TrimSuffix(string(f.current), "\r\n"))
 }

@@ -16,6 +16,7 @@ import (
 	"periph.io/x/conn/v3/uart"
 	"periph.io/x/conn/v3/uart/uartreg"
 	"periph.io/x/host/v3"
+	"periph.io/x/host/v3/serial"
 	_ "periph.io/x/host/v3/serial"
 )
 
@@ -230,6 +231,10 @@ func New(conf *Config) (*Lora, error) {
 		return nil, err
 	}
 
+	return newLora(p, c)
+}
+
+func newLora(p uart.PortCloser, c conn.Conn) (*Lora, error) {
 	return &Lora{
 		port:   p,
 		conn:   c,
@@ -558,6 +563,10 @@ func newConfig(config *Config) config {
 			defaultConfig.Name = config.Name
 		}
 	}
+}
+
+func newPort() *serial.Port {
+	return nil
 }
 
 func isOk(msg string) bool {
