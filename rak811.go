@@ -244,14 +244,14 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	//}
 	buf := make([]byte, 128)
-	_, err = l.port.Read(buf)
-	if err != nil {
+	n, err := l.port.Read(buf)
+	if err != nil && err != io.EOF {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
 
 	debug(l, fmt.Sprintf("tx: read: %s", string(buf)))
 
-	return fn(buf)
+	return fn(buf[:n])
 }
 
 func debug(l *Lora, format string) {
