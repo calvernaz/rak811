@@ -251,7 +251,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 
 	debug(l, fmt.Sprintf("tx: read: %s", string(buf)))
 
-	return fn(buf.Bytes())
+	return fn(buf)
 }
 
 func debug(l *Lora, format string) {
