@@ -201,6 +201,7 @@ func New(conf *Config) (*Lora, error) {
 		Parity:   ParityNone,
 		StopBits: Stop1,
 		Size:     8,
+		Timeout: 10 * time.Second,
 	}
 
 	newConfig(conf)(defaultConfig)
