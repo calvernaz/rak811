@@ -231,7 +231,9 @@ func New(conf *Config) (*Lora, error) {
 	return &Lora{
 		port:   p,
 		conn:   c,
-		config: nil,
+		config: &extraConfig{
+			debug: false,
+		},
 	}, nil
 }
 
