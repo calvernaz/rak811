@@ -516,6 +516,7 @@ func (l *Lora) SetUART(configuration string) (string, error) {
 }
 
 func readline(b []byte) (string, error) {
+	fmt.Printf("readline %v\n", string(b))
 	scanner := bufio.NewScanner(bytes.NewReader(b))
 	scanner.Split(bufio.ScanLines)
 
