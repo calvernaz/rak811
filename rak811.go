@@ -6,18 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"time"
 
-	"periph.io/x/conn/v3"
+	"github.com/tarm/serial"
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
-	"periph.io/x/conn/v3/physic"
-	"periph.io/x/conn/v3/uart"
-	"periph.io/x/conn/v3/uart/uartreg"
-	"periph.io/x/host/v3"
-	"periph.io/x/host/v3/serial"
-	_ "periph.io/x/host/v3/serial"
 )
 
 const (
@@ -163,7 +158,7 @@ func WhichEventResponse(resp string) *EventResponse {
 }
 
 type StopBits int8
-type Parity byte
+type Parity int8
 
 const (
 	Stop1     StopBits = 1
@@ -185,18 +180,18 @@ type extraConfig struct {
 
 type Config struct {
 	Name     string
-	Baud     int64
+	Baud     int
 	Parity   Parity
 	StopBits StopBits
-	Size     int
+	Size     uint8
+	Timeout  time.Duration
 }
 
 type config func(*Config)
 
 type Lora struct {
-	conn   conn.Conn
 	config *extraConfig
-	port   uart.PortCloser
+	port   io.ReadWriteCloser
 }
 
 func New(conf *Config) (*Lora, error) {
@@ -210,34 +205,24 @@ func New(conf *Config) (*Lora, error) {
 
 	newConfig(conf)(defaultConfig)
 
-	// Load all the drivers:
-	_, err := host.Init()
+	p, err := serial.OpenPort(&serial.Config{
+		Name:        defaultConfig.Name,
+		Baud:        defaultConfig.Baud,
+		ReadTimeout: defaultConfig.Timeout,
+		Size:        defaultConfig.Size,
+		Parity:      serial.Parity(defaultConfig.Parity),
+		StopBits:    serial.StopBits(defaultConfig.StopBits),
+	})
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	p, err := uartreg.Open(defaultConfig.Name)
-	if err != nil {
-		return nil, fmt.Errorf("open: %q", err)
-	}
-	c, err := p.Connect(
-		physic.Frequency(defaultConfig.Baud)*physic.Hertz,
-		uart.Stop(defaultConfig.StopBits),
-		uart.Parity(defaultConfig.Parity),
-		uart.RTSCTS,
-		defaultConfig.Size,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return newLora(p, c)
+	return newLora(p)
 }
 
-func newLora(p uart.PortCloser, c conn.Conn) (*Lora, error) {
+func newLora(p io.ReadWriteCloser) (*Lora, error) {
 	return &Lora{
 		port:   p,
-		conn:   c,
 		config: &extraConfig{
 			debug: false,
 		},
@@ -246,14 +231,14 @@ func newLora(p uart.PortCloser, c conn.Conn) (*Lora, error) {
 
 func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	cmd := createCmd(s)
-	_, err := l.conn.(io.Writer).Write(cmd)
+	_, err := l.port.Write(cmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
 	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
 
 	buf := bytes.Buffer{}
-	r, err := buf.ReadFrom(l.conn.(io.Reader))
+	r, err := buf.ReadFrom(l.port)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
@@ -295,7 +280,7 @@ func (l *Lora) Reset(mode int) (string, error) {
 	return l.tx(fmt.Sprintf("reset=%d", mode), readline)
 }
 
-// HardReset the module by reseting the hat pins.
+// HardReset the module by resetting the hat pins.
 func (l *Lora) HardReset() (string, error) {
 	pin := gpioreg.ByName("GPIO17")
 
@@ -310,7 +295,7 @@ func (l *Lora) HardReset() (string, error) {
 	time.Sleep(2000 * time.Millisecond)
 
 	buf := bytes.Buffer{}
-	_, err := buf.ReadFrom(l.conn.(io.Reader))
+	_, err := buf.ReadFrom(l.port)
 	if err != nil {
 		return "", fmt.Errorf("failed reading response: %v", err)
 	}
