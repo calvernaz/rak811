@@ -245,25 +245,21 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, "tx: write:", string(cmd))
+	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
-	debug(l, "tx: %d read: %v", r, buf.Bytes())
+	debug(l, fmt.Sprintf("tx: %d read: %v", r, buf.Bytes()))
 
 	return fn(buf.Bytes())
 }
 
-func debug(l *Lora, format string, a ...interface{}) {
+func debug(l *Lora, format string) {
 	if l.config.debug {
-		if a != nil {
-			fmt.Printf("%s\n", fmt.Sprintf("%v%v", format, a))
-		} else {
-			fmt.Printf(strings.TrimSuffix(format, CR_LF))
-		}
+		fmt.Printf("%s\n", format)
 	}
 }
 
