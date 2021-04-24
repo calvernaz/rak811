@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	cfg := &rak811.Config{}
+	cfg := &rak811.Config{
+		Name:     "/dev/ttyAMA0",
+	}
 	lora, err := rak811.New(cfg)
 	if err != nil {
 		log.Fatal("failed to create rak811 instance: ", err)
