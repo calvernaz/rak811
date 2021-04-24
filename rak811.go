@@ -238,25 +238,20 @@ func New(conf *Config) (*Lora, error) {
 }
 
 func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
-	buf := make([]byte, 30)
-	err := l.conn.Tx(createCmd(cmd), buf)
+	n, err := l.conn.(io.Writer).Write(createCmd(cmd))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	//n, err := l.conn.(io.Writer).Write(createCmd(cmd))
-	//if err != nil {
-		//return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
-	//}
-	//debug(l, "tx: write: %d", n)
+	debug(l, "tx: write: %d", n)
 
-	//buf := bytes.Buffer{}
-	//r, err := buf.ReadFrom(l.conn.(io.Reader))
-	//if err != nil {
-	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
-	//}
-	//debug(l, "tx: read: %d", r)
+	buf := bytes.Buffer{}
+	r, err := buf.ReadFrom(l.conn.(io.Reader))
+	if err != nil {
+		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+	}
+	debug(l, "tx: read: %d", r)
 
-	return fn(buf)
+	return fn(buf.Bytes())
 }
 
 func debug(l *Lora, format string, a ...interface{}) {
