@@ -243,7 +243,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, "tx: write: %v", string(cmd))
+	debug(l, "tx: write:", string(cmd))
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
@@ -507,8 +507,7 @@ func (l *Lora) ClearRadioStatus() (string, error) {
 }
 
 func createCmd(cmd string) []byte {
-	command := fmt.Sprintf("at+%s\r\n", cmd)
-	return []byte(command)
+	return []byte(fmt.Sprintf("at+%s\r\n", cmd))
 }
 
 //
