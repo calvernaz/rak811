@@ -220,7 +220,7 @@ func New(conf *Config) (*Lora, error) {
 		return nil, fmt.Errorf("open: %q", err)
 	}
 	c, err := p.Connect(
-		115200*physic.Hertz,
+		physic.Frequency(defaultConfig.Baud)*physic.Hertz,
 		uart.Stop(defaultConfig.StopBits),
 		uart.Parity(defaultConfig.Parity),
 		uart.RTSCTS,
@@ -241,22 +241,20 @@ func New(conf *Config) (*Lora, error) {
 
 func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	cmd := createCmd(s)
-	//_, err := l.conn.(io.Writer).Write(cmd)
-	b := make([]byte, 50)
-	err := l.conn.Tx(cmd, b)
+	_, err := l.conn.(io.Writer).Write(cmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
 	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
 
-	//buf := bytes.Buffer{}
-	//r, err := buf.ReadFrom(l.conn.(io.Reader))
-	//if err != nil {
-	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
-	//}
-	//debug(l, fmt.Sprintf("tx: %d read: %v", r, buf.Bytes()))
-	//
-	return fn(b)
+	buf := bytes.Buffer{}
+	r, err := buf.ReadFrom(l.conn.(io.Reader))
+	if err != nil {
+		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+	}
+	debug(l, fmt.Sprintf("tx: %d read: %v", r, buf.Bytes()))
+
+	return fn(buf.Bytes())
 }
 
 func debug(l *Lora, format string) {
