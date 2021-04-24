@@ -238,11 +238,15 @@ func New(conf *Config) (*Lora, error) {
 }
 
 func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
-	n, err := l.conn.(io.Writer).Write(createCmd(cmd))
+	err := l.conn.Tx(createCmd(cmd), nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
+		return "", err
 	}
-	debug(l, "tx: write: %d", n)
+	//n, err := l.conn.(io.Writer).Write(createCmd(cmd))
+	//if err != nil {
+		//return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
+	//}
+	//debug(l, "tx: write: %d", n)
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
