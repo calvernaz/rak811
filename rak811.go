@@ -219,7 +219,7 @@ func New(conf *Config) (*Lora, error) {
 	}
 
 	c, err := p.Connect(
-		physic.Frequency(defaultConfig.Baud),
+		physic.Frequency(defaultConfig.Baud)*physic.KiloHertz,
 		uart.Stop(defaultConfig.StopBits),
 		uart.Parity(defaultConfig.Parity),
 		uart.NoFlow,
