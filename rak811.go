@@ -238,7 +238,8 @@ func New(conf *Config) (*Lora, error) {
 }
 
 func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
-	err := l.conn.Tx(createCmd(cmd), nil)
+	buf := make([]byte, 30)
+	err := l.conn.Tx(createCmd(cmd), buf)
 	if err != nil {
 		return "", err
 	}
@@ -248,14 +249,14 @@ func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
 	//}
 	//debug(l, "tx: write: %d", n)
 
-	buf := bytes.Buffer{}
-	r, err := buf.ReadFrom(l.conn.(io.Reader))
-	if err != nil {
-		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
-	}
-	debug(l, "tx: read: %d", r)
+	//buf := bytes.Buffer{}
+	//r, err := buf.ReadFrom(l.conn.(io.Reader))
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+	//}
+	//debug(l, "tx: read: %d", r)
 
-	return fn(buf.Bytes())
+	return fn(buf)
 }
 
 func debug(l *Lora, format string, a ...interface{}) {
