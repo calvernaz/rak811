@@ -249,14 +249,14 @@ func (l *Lora) tx(cmd string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
-	debug(l, "tx: read: %d", r)
+	debug(l, "tx: read: %d %v", r, buf.Bytes())
 
 	return fn(buf.Bytes())
 }
 
 func debug(l *Lora, format string, a ...interface{}) {
 	if l.config.debug {
-		fmt.Printf(format, a)
+		fmt.Printf(fmt.Sprintf("%v\n", format), a)
 	}
 }
 
