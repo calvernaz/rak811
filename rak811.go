@@ -238,12 +238,18 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	}
 	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
 
-	buf := bytes.Buffer{}
-	_, err = buf.ReadFrom(l.port)
+	//buf := bytes.Buffer{}
+	//_, err = buf.ReadFrom(l.port)
+	//if err != nil {
+	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+	//}
+	buf := make([]byte, 128)
+	_, err = l.port.Read(buf)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
-	debug(l, fmt.Sprintf("tx: read: %s", string(buf.Bytes())))
+
+	debug(l, fmt.Sprintf("tx: read: %s", string(buf)))
 
 	return fn(buf.Bytes())
 }
