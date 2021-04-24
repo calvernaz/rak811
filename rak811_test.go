@@ -257,7 +257,7 @@ func TestLora_GetBand(t *testing.T) {
 }
 
 func TestLora_JoinOTAA(t *testing.T) {
-	fsp := newFakeSerialConn([]byte(OK+"\r\n"), []byte(JoinSuccess+"\r\n"))
+	fsp := newFakeSerialConn([]byte(OK+CrLf), []byte(JoinSuccess+CrLf))
 	lora, err := newLora(fsp)
 	if err != nil {
 		t.Error("failed to instantiate Lora")
@@ -520,5 +520,5 @@ func (*FakeSerialConn) Flush() {
 }
 
 func (f FakeSerialConn) At() []byte {
-	return []byte(strings.TrimSuffix(string(f.current), "\r\n"))
+	return []byte(strings.TrimSuffix(string(f.current), CrLf))
 }

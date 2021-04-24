@@ -51,7 +51,7 @@ const (
 	// JoinTimeout no response from a gateway.
 	JoinTimeout = "at+recv=6,0,0"
 
-	CR_LF = "\r\n"
+	CrLf = "\r\n"
 
 	OK    = "OK"
 	ERROR = "ERROR"
@@ -230,29 +230,36 @@ func newLora(p io.ReadWriteCloser) (*Lora, error) {
 	}, nil
 }
 
-func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
-	cmd := createCmd(s)
-	_, err := l.port.Write(cmd)
-	if err != nil {
+func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) {
+	if _, err := l.port.Write(createCmd(cmd)); err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
-
-	//buf := bytes.Buffer{}
-	//_, err = buf.ReadFrom(l.port)
-	//if err != nil {
-	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
-	//}
-	buf := make([]byte, 128)
-	n, err := l.port.Read(buf)
-	if err != nil && err != io.EOF {
-		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
-	}
-
-	debug(l, fmt.Sprintf("tx: read: %s", string(buf)))
-
-	return fn(buf[:n])
+	return fn(l)
 }
+
+//func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
+//	cmd := createCmd(s)
+//	_, err := l.port.Write(cmd)
+//	if err != nil {
+//		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
+//	}
+//	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
+//
+//	//buf := bytes.Buffer{}
+//	//_, err = buf.ReadFrom(l.port)
+//	//if err != nil {
+//	//	return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+//	//}
+//	buf := make([]byte, 128)
+//	n, err := l.port.Read(buf)
+//	if err != nil && err != io.EOF {
+//		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
+//	}
+//
+//	debug(l, fmt.Sprintf("tx: read: %s", string(buf)))
+//
+//	return fn(buf[:n])
+//}
 
 func debug(l *Lora, format string) {
 	if l.config.debug {
@@ -369,32 +376,55 @@ func (l *Lora) SetBand(band string) (string, error) {
 // The module doesn't accept any other command before it returns a response.
 // Response: JoinSuccess, JoinFail, JoinTimeout
 func (l *Lora) JoinOTAA() (string, error) {
-	return l.tx("join=otaa", func(b []byte) (string, error) {
-		scanner := bufio.NewScanner(bytes.NewReader(b))
-		scanner.Split(bufio.ScanLines)
-
-		for scanner.Scan() {
-			line := scanner.Text()
-			switch line {
-			case OK:
-				continue
-			case JoinSuccess:
-				return JoinSuccess, nil
-			case JoinFail:
-				return JoinFail, nil
-			case JoinTimeout:
-				return JoinTimeout, nil
-			default:
-				return line, fmt.Errorf("invalid join response line: %v", line)
-			}
-		}
-
-		err := scanner.Err()
+	return l.tx("join=otaa", func(l *Lora) (string, error) {
+		resp, err := readline(l)
 		if err != nil {
 			return "", err
 		}
-		return "", nil
+
+		if strings.HasPrefix(resp, OK) {
+			resp, err := readline(l)
+			if err == nil && resp != "" {
+				switch resp {
+				case JoinSuccess:
+					return JoinSuccess, nil
+				case JoinFail:
+					return JoinFail, nil
+				case JoinTimeout:
+					return JoinTimeout, nil
+				default:
+					return "", fmt.Errorf("invalid join response resp: %v", resp)
+				}
+			}
+		}
+		return resp, err
 	})
+	//return l.tx("join=otaa", func(b []byte) (string, error) {
+	//	scanner := bufio.NewScanner(bytes.NewReader(b))
+	//	scanner.Split(bufio.ScanLines)
+	//
+	//	for scanner.Scan() {
+	//		line := scanner.Text()
+	//		switch line {
+	//		case OK:
+	//			continue
+	//		case JoinSuccess:
+	//			return JoinSuccess, nil
+	//		case JoinFail:
+	//			return JoinFail, nil
+	//		case JoinTimeout:
+	//			return JoinTimeout, nil
+	//		default:
+	//			return line, fmt.Errorf("invalid join response line: %v", line)
+	//		}
+	//	}
+	//
+	//	err := scanner.Err()
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//	return "", nil
+	//})
 }
 
 // JoinABP join the configured network in ABP mode
@@ -434,26 +464,41 @@ func (l *Lora) GetABPInfo() (string, error) {
 
 // Send sends data to LoRaWAN network, returns the event response
 func (l *Lora) Send(data string) (string, error) {
-	return l.tx(fmt.Sprintf("send=%s", data), func(b []byte) (string, error) {
-		scanner := bufio.NewScanner(bytes.NewReader(b))
-		scanner.Split(bufio.ScanLines)
-
-		for scanner.Scan() {
-			line := scanner.Text()
-			switch {
-			case line == OK:
-				continue
-			case line != "":
-				return line, nil
-			}
-		}
-
-		err := scanner.Err()
+	return l.tx(fmt.Sprintf("send=%s", data), func(l *Lora) (string, error) {
+		resp, err := readline(l)
 		if err != nil {
 			return "", err
 		}
-		return "", nil
+
+		if strings.HasPrefix(resp, OK) {
+			resp, err := readline(l)
+			if err != nil {
+				return "", err
+			}
+			return resp, nil
+		}
+		return resp, errors.New(resp)
 	})
+	//return l.tx(fmt.Sprintf("send=%s", data), func(b []byte) (string, error) {
+	//	scanner := bufio.NewScanner(bytes.NewReader(b))
+	//	scanner.Split(bufio.ScanLines)
+	//
+	//	for scanner.Scan() {
+	//		line := scanner.Text()
+	//		switch {
+	//		case line == OK:
+	//			continue
+	//		case line != "":
+	//			return line, nil
+	//		}
+	//	}
+	//
+	//	err := scanner.Err()
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//	return "", nil
+	//})
 }
 
 // Recv receive event and data from LoRaWAN or LoRaP2P network
@@ -523,28 +568,53 @@ func (l *Lora) SetUART(configuration string) (string, error) {
 	return l.tx(fmt.Sprintf("uart=%s", configuration), readline)
 }
 
-func readline(b []byte) (string, error) {
-	scanner := bufio.NewScanner(bytes.NewReader(b))
-	scanner.Split(bufio.ScanLines)
+func readline(l *Lora) (string, error) {
+	reader := bufio.NewReader(l.port)
+	for {
+		resp, err := reader.ReadString('\n')
+		if err != nil {
+			// serial timeout has triggered
+			if err == io.EOF {
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if isOk(line) {
-			return line, nil
+				if isOk(resp) {
+					return resp, nil
+				}
+
+				if err := isError(resp); err != nil {
+					return "", err
+				}
+				continue // proceed until the global timeout operation kicks in
+			}
+			return "", fmt.Errorf("failed read: %v", err)
 		}
 
-		if err := isError(line); err != nil {
-			return "", err
-		}
-		continue
+		resp = strings.TrimSuffix(strings.TrimSpace(resp), "\r")
+		return resp, nil
 	}
-
-	err := scanner.Err()
-	if err != nil {
-		return "", err
-	}
-	return "", nil
 }
+
+//func readline(b []byte) (string, error) {
+//	scanner := bufio.NewScanner(bytes.NewReader(b))
+//	scanner.Split(bufio.ScanLines)
+//
+//	for scanner.Scan() {
+//		line := scanner.Text()
+//		if isOk(line) {
+//			return line, nil
+//		}
+//
+//		if err := isError(line); err != nil {
+//			return "", err
+//		}
+//		continue
+//	}
+//
+//	err := scanner.Err()
+//	if err != nil {
+//		return "", err
+//	}
+//	return "", nil
+//}
 
 func newConfig(config *Config) config {
 	return func(defaultConfig *Config) {
