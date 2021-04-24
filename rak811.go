@@ -55,6 +55,8 @@ const (
 	// JoinTimeout no response from a gateway.
 	JoinTimeout = "at+recv=6,0,0"
 
+	CR_LF = "\r\n"
+
 	OK    = "OK"
 	ERROR = "ERROR"
 )
@@ -243,7 +245,8 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	debug(l, "tx: write:", string(cmd))
+	fmt.Println(strings.TrimSuffix(string(cmd), CR_LF))
+	//debug(l, "tx: write:", string(cmd))
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
@@ -257,7 +260,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 
 func debug(l *Lora, format string, a ...interface{}) {
 	if l.config.debug {
-		fmt.Println(strings.TrimSuffix(format, "\r\n"), a)
+		fmt.Println(strings.TrimSuffix(format, CR_LF), a)
 	}
 }
 
