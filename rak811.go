@@ -548,6 +548,10 @@ func newConfig(config *Config) config {
 		if config.Name != "" {
 			defaultConfig.Name = config.Name
 		}
+
+		if config.Timeout > 0 {
+			defaultConfig.Timeout = config.Timeout
+		}
 	}
 }
 
