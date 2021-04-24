@@ -220,7 +220,7 @@ func New(conf *Config) (*Lora, error) {
 		return nil, fmt.Errorf("open: %q", err)
 	}
 	c, err := p.Connect(
-		physic.Frequency(defaultConfig.Baud)*physic.Hertz,
+		115200*physic.Hertz,
 		uart.Stop(defaultConfig.StopBits),
 		uart.Parity(defaultConfig.Parity),
 		uart.RTSCTS,
