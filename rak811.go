@@ -201,7 +201,7 @@ func New(conf *Config) (*Lora, error) {
 		Parity:   ParityNone,
 		StopBits: Stop1,
 		Size:     8,
-		Timeout: 10 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	newConfig(conf)(defaultConfig)
@@ -554,7 +554,6 @@ func newConfig(config *Config) config {
 		if config.Name != "" {
 			defaultConfig.Name = config.Name
 		}
-
 		if config.Timeout > 0 {
 			defaultConfig.Timeout = config.Timeout
 		}
