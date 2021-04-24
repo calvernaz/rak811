@@ -245,8 +245,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	fmt.Printf(strings.TrimSuffix(string(cmd), CR_LF), string(cmd))
-	//debug(l, "tx: write:", string(cmd))
+	debug(l, "tx: write:", string(cmd))
 
 	buf := bytes.Buffer{}
 	r, err := buf.ReadFrom(l.conn.(io.Reader))
@@ -260,7 +259,11 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 
 func debug(l *Lora, format string, a ...interface{}) {
 	if l.config.debug {
-		fmt.Println(strings.TrimSuffix(format, CR_LF), a)
+		if a != nil {
+			fmt.Println(strings.TrimSuffix(format, CR_LF), a)
+		} else {
+			fmt.Printf(strings.TrimSuffix(format, CR_LF))
+		}
 	}
 }
 
