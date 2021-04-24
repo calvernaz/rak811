@@ -245,7 +245,7 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
 	}
-	fmt.Println(strings.TrimSuffix(string(cmd), CR_LF))
+	fmt.Printf(strings.TrimSuffix(string(cmd), CR_LF), string(cmd))
 	//debug(l, "tx: write:", string(cmd))
 
 	buf := bytes.Buffer{}
