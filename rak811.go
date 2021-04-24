@@ -507,7 +507,7 @@ func (l *Lora) ClearRadioStatus() (string, error) {
 }
 
 func createCmd(cmd string) []byte {
-	return []byte(fmt.Sprintf("at+%s\r\n", cmd))
+	return []byte(fmt.Sprintf("at+%v\r\n", cmd))
 }
 
 //
