@@ -223,7 +223,7 @@ func New(conf *Config) (*Lora, error) {
 		physic.Frequency(defaultConfig.Baud)*physic.Hertz,
 		uart.Stop(defaultConfig.StopBits),
 		uart.Parity(defaultConfig.Parity),
-		uart.NoFlow,
+		uart.RTSCTS,
 		defaultConfig.Size,
 	)
 	if err != nil {
