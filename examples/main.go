@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/calvernaz/rak811"
 )
@@ -10,6 +11,7 @@ import (
 func main() {
 	cfg := &rak811.Config{
 		Name:     "/dev/ttyAMA0",
+		Timeout: 60 * time.Second,
 	}
 	lora, err := rak811.New(cfg)
 	if err != nil {
