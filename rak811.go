@@ -239,11 +239,11 @@ func (l *Lora) tx(s string, fn func([]byte) (string, error)) (string, error) {
 	debug(l, fmt.Sprintf("tx: write: %s", string(cmd)))
 
 	buf := bytes.Buffer{}
-	r, err := buf.ReadFrom(l.port)
+	_, err = buf.ReadFrom(l.port)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response from %q: %v", cmd, err)
 	}
-	debug(l, fmt.Sprintf("tx: %d read: %v", r, buf.Bytes()))
+	debug(l, fmt.Sprintf("tx: read: %s", string(buf.Bytes())))
 
 	return fn(buf.Bytes())
 }
@@ -411,17 +411,17 @@ func (l *Lora) SetDataRate(datarate string) (string, error) {
 	return l.tx(fmt.Sprintf("dr=%s", datarate), readline)
 }
 
-// GetLinkCnt get LoRaWAN uplink and downlink counter
+// GetLinkCnt get LoRaWAN uplink and down-link counter
 func (l *Lora) GetLinkCnt() (string, error) {
 	return l.tx("link_cnt", readline)
 }
 
-// SetLinkCnt set LoRaWAN uplink and downlink counter
+// SetLinkCnt set LoRaWAN uplink and down-link counter
 func (l *Lora) SetLinkCnt(uplinkCnt, downlinkCnt float32) (string, error) {
 	return l.tx(fmt.Sprintf("link_cnt=%f,%f", uplinkCnt, downlinkCnt), readline)
 }
 
-// GetABPInfo
+// GetABPInfo get ABP information
 func (l *Lora) GetABPInfo() (string, error) {
 	return l.tx("abp_info", readline)
 }
@@ -489,12 +489,12 @@ func (l *Lora) RxStop() (string, error) {
 // Radio commands
 //
 
-// GetStatus get radio statistics
+// GetRadioStatus get radio statistics
 func (l *Lora) GetRadioStatus() (string, error) {
 	return l.tx("status", readline)
 }
 
-// SetStatus clear radio statistics
+// ClearRadioStatus clear radio statistics
 func (l *Lora) ClearRadioStatus() (string, error) {
 	return l.tx("status=0", readline)
 }
@@ -549,10 +549,6 @@ func newConfig(config *Config) config {
 			defaultConfig.Name = config.Name
 		}
 	}
-}
-
-func newPort() *serial.Port {
-	return nil
 }
 
 func isOk(msg string) bool {
