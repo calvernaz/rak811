@@ -9,11 +9,12 @@ import (
 
 func main() {
 	cfg := &rak811.Config{}
-
 	lora, err := rak811.New(cfg)
 	if err != nil {
 		log.Fatal("failed to create rak811 instance: ", err)
 	}
+	// set debug mode
+	lora.Debug(true)
 
 	resp, err := lora.Version()
 	if err != nil {
