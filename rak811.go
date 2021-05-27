@@ -248,7 +248,7 @@ func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) 
 			return "", err
 		}
 		break
-	case <- time.After(time.Second * l.config.timeout):
+	case <- time.After(l.config.timeout):
 		log.Println("request timeout")
 		break
 	}
