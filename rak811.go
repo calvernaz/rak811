@@ -234,13 +234,13 @@ func newLora(p io.ReadWriteCloser, config *Config) (*Lora, error) {
 
 func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) {
 	ch := make(chan error)
-	go func(chan error) {
+	go func() {
 		if _, err := l.port.Write(createCmd(cmd)); err != nil {
 			ch <- fmt.Errorf("failed to write command %q with: %v", cmd, err)
 			return
 		}
 		ch <- nil
-	}(ch)
+	}()
 
 	select {
 	case err := <-ch:
