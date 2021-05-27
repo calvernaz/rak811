@@ -236,9 +236,11 @@ func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) 
 	ch := make(chan error)
 	go func() {
 		if _, err := l.port.Write(createCmd(cmd)); err != nil {
+			log.Println("port write")
 			ch <- fmt.Errorf("failed to write command %q with: %v", cmd, err)
 			return
 		}
+		log.Println("nil")
 		ch <- nil
 	}()
 
@@ -247,6 +249,7 @@ func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) 
 		if err != nil {
 			return "", err
 		}
+		log.Println("no errors")
 		break
 	case <- time.After(l.config.timeout):
 		log.Println("request timeout")
