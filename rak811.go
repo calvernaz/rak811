@@ -175,7 +175,8 @@ const (
 )
 
 type extraConfig struct {
-	debug bool
+	debug   bool
+	timeout time.Duration
 }
 
 type Config struct {
@@ -218,21 +219,38 @@ func New(conf *Config) (*Lora, error) {
 		log.Fatal(err)
 	}
 
-	return newLora(p)
+	return newLora(p, defaultConfig)
 }
 
-func newLora(p io.ReadWriteCloser) (*Lora, error) {
+func newLora(p io.ReadWriteCloser, config *Config) (*Lora, error) {
 	return &Lora{
 		port:   p,
 		config: &extraConfig{
 			debug: false,
+			timeout: config.Timeout,
 		},
 	}, nil
 }
 
 func (l *Lora) tx(cmd string, fn func(l *Lora) (string, error)) (string, error) {
-	if _, err := l.port.Write(createCmd(cmd)); err != nil {
-		return "", fmt.Errorf("failed to write command %q with: %v", cmd, err)
+	ch := make(chan error)
+	go func(chan error) {
+		if _, err := l.port.Write(createCmd(cmd)); err != nil {
+			ch <- fmt.Errorf("failed to write command %q with: %v", cmd, err)
+			return
+		}
+		ch <- nil
+	}(ch)
+
+	select {
+	case err := <-ch:
+		if err != nil {
+			return "", err
+		}
+		break
+	case <- time.After(time.Second * l.config.timeout):
+		log.Println("request timeout")
+		break
 	}
 	return fn(l)
 }
